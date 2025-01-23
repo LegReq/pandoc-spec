@@ -1,9 +1,5 @@
-import { exec as pandocDefrefExec } from "@legreq/pandoc-defref";
 import { spawnSync } from "child_process";
 import fs from "fs";
-
-// Exporting the pandoc-defref exec() function is necessary for the proxy binary, as the pandoc-defref package may not be installed directly by the client.
-export { pandocDefrefExec };
 
 /**
  * Get the full path from a relative path.
@@ -167,7 +163,7 @@ export function exec(parameterOptions: unknown): never {
         arg("--lua-filter", fullPath("../pandoc/include-files.lua")),
         arg("--lua-filter", fullPath("../pandoc/include-code-files.lua")),
         arg("--filter", "mermaid-filter"),
-        arg("--filter", "pandoc-defref-proxy"),
+        arg("--filter", "pandoc-defref"),
         ...(options.filters ?? []).map(filter => arg(filter.type !== "json" ? "--lua-filter" : "--filter", filter.name)),
         arg("--template", options.templateFile, fullPath("../pandoc/template.html")),
         arg("--include-before-body", options.headerFile),
