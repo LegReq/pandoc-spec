@@ -1,0 +1,4 @@
+#!/usr/bin/env node
+import { pandocDefrefExec } from "@legreq/pandoc-spec";
+
+pandocDefrefExec();

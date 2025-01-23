@@ -1,0 +1,47 @@
+{
+  "name": "@legreq/pandoc-spec",
+  "version": "1.0.0-beta",
+  "description": "Pandoc specification builder",
+  "type": "module",
+  "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LegReq/pandoc-spec.git"
+  },
+  "bugs": {
+    "url": "https://github.com/LegReq/pandoc-spec/issues"
+  },
+  "license": "Apache-2.0",
+  "author": {
+    "name": "Kevin Dean",
+    "email": "kevin@legreq.com",
+    "url": "https://www.linkedin.com/in/kdean"
+  },
+  "keywords": [
+    "pandoc",
+    "specification"
+  ],
+  "scripts": {
+    "lint": "eslint .",
+    "build-dist": "tsup src/index.ts --format cjs,esm --dts"
+  },
+  "bin": {
+    "pandoc-defref-proxy": "bin/pandoc-defref-proxy"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@stylistic/eslint-plugin": "^2.13.0",
+    "eslint": "^9.18.0",
+    "eslint-config-love": "^117.0.0",
+    "eslint-plugin-jsdoc": "^50.6.2",
+    "jiti": "^2.4.2",
+    "ts-node": "^10.9.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.21.0"
+  },
+  "dependencies": {
+    "@legreq/pandoc-defref": "^1.0.2-beta"
+  }
+}
