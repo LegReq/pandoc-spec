@@ -1,3 +1,5 @@
+/* eslint-disable no-console -- Console application. */
+
 import { spawnSync } from "child_process";
 import fs from "fs";
 
