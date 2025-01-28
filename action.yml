@@ -1,0 +1,69 @@
+name: Pandoc specification builder
+description: Sets up Pandoc and runs either a pre-defined pandoc-spec script in package.json or the pandoc-spec shell script.
+
+inputs:
+  include-repository:
+    description: If true, includes node setup, repository checkout, and npm install. Default is false.
+    required: false
+  node-version:
+    description: Version of node to be installed; ignored if include-repository is false. Default is environment-defined.
+    required: false
+  include-pages:
+    description: If true, includes publication to GitHub Pages. Default is false.
+    required: false
+  pages-path:
+    description: Path of the output directory containing the GitHub Pages content; ignored if include-pages is false. Default is "_site/".
+    required: false
+
+runs:
+  using: composite
+
+  steps:
+    - name: Setup node
+      if: inputs.include-repository == 'true'
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        registry-url: https://registry.npmjs.org/
+
+    - name: Checkout
+      if: inputs.include-repository == 'true'
+      uses: actions/checkout@v4
+
+    - name: NPM install
+      if: inputs.include-repository == 'true'
+      shell: bash
+      run: |
+        npm install
+
+    - name: Setup Pandoc
+      uses: pandoc/actions/setup@v1
+
+    - name: Build specification
+      shell: bash
+      run: |
+        # Check for package-defined build.
+        npm run | grep -q "^  pandoc-spec$"
+        
+        if [ $? -eq 0 ]
+        then
+          echo "Running pandoc-spec npm script"
+          npm run pandoc-spec
+        else
+          echo "Running pandoc-spec shell script"
+          pandoc-spec
+        fi
+
+    - name: Configure GitHub Pages
+      if: inputs.include-pages == 'true'
+      uses: actions/configure-pages@v5
+
+    - name: Upload pages directory
+      if: inputs.include-pages == 'true'
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ inputs.pages-path }}
+
+    - name: Deploy to GitHub Pages
+      if: inputs.include-pages == 'true'
+      uses: actions/deploy-pages@v4
