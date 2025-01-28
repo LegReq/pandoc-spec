@@ -25,6 +25,9 @@
     "lint": "eslint .",
     "build-dist": "tsup src/index.ts --format esm --dts"
   },
+  "bin": {
+    "pandoc-spec": "bin/pandoc-spec"
+  },
   "devDependencies": {
     "@legreq/tsdev": "^1.0.1-beta",
     "eslint": "^9.19.0",
