@@ -44,11 +44,13 @@ runs:
       run: |
         NPM_SCRIPTS=$(npm run)
         
+        echo "Scripts:"
         echo $NPM_SCRIPTS
         
         # Check for package-defined build.
-        GREP_RESULT=t1=$((echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"); echo $?)
+        GREP_RESULT=$((echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"); echo $?)
         
+        echo "Found:"
         echo $GREP_RESULT
         
         if [ $GREP_RESULT -eq 0 ]
