@@ -13,7 +13,7 @@ inputs:
     required: false
   pages-path:
     description: Path of the output directory containing the GitHub Pages content; ignored if include-pages is false. Default is "_site/".
-    required: true
+    required: false
     # Default must match default for path in actions/upload-pages-artifact.
     default: "_site/"
 
