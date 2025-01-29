@@ -2,17 +2,28 @@
 
 import { spawnSync } from "child_process";
 import fs from "fs";
+import * as path from "node:path";
 
 /**
- * Get the full path from a relative path.
+ * Configuration layout of .puppeteer.json (relevant attributes only).
+ */
+interface PuppeteerConfiguration {
+    /**
+     * Arguments.
+     */
+    args: string[] | undefined;
+}
+
+/**
+ * Get the module path of path relative to the module root.
  *
  * @param relativePath
- * Path relative to this module.
+ * Path relative to the module root.
  *
  * @returns
- * Full path.
+ * Module path.
  */
-function fullPath(relativePath: string): string {
+function modulePath(relativePath: string): string {
     return decodeURI(new URL(relativePath, import.meta.url).pathname);
 }
 
@@ -162,12 +173,12 @@ export function exec(parameterOptions: unknown): never {
         arg("--shift-heading-level-by", options.shiftHeadingLevelBy, -1),
         arg("--number-sections", options.numberSections, true),
         arg("--toc", options.generateTOC, true),
-        arg("--lua-filter", fullPath("../pandoc/include-files.lua")),
-        arg("--lua-filter", fullPath("../pandoc/include-code-files.lua")),
+        arg("--lua-filter", modulePath("../pandoc/include-files.lua")),
+        arg("--lua-filter", modulePath("../pandoc/include-code-files.lua")),
         arg("--filter", "mermaid-filter"),
         arg("--filter", "pandoc-defref"),
         ...(options.filters ?? []).map(filter => arg(filter.type !== "json" ? "--lua-filter" : "--filter", filter.name)),
-        arg("--template", options.templateFile, fullPath("../pandoc/template.html")),
+        arg("--template", options.templateFile, modulePath("../pandoc/template.html")),
         arg("--include-before-body", options.headerFile),
         arg("--include-after-body", options.footerFile),
         arg("--output", options.outputFile),
@@ -180,22 +191,90 @@ export function exec(parameterOptions: unknown): never {
         console.error(`Pandoc arguments:\n${args.join("\n")}`);
     }
 
-    const spawnResult = spawnSync("pandoc", args, {
-        stdio: ["inherit", "inherit", "inherit"]
-    });
+    const outputDirectory = path.dirname(path.resolve(options.outputFile));
 
-    if (spawnResult.error !== undefined) {
-        throw spawnResult.error;
+    // Create output directory if it doesn't exist.
+    if (!fs.existsSync(outputDirectory)) {
+        fs.mkdirSync(outputDirectory, {
+            recursive: true
+        });
     }
 
-    if (spawnResult.status === null) {
-        throw new Error(`Terminated by signal ${spawnResult.signal}`);
+    const puppeteerConfigurationFile = ".puppeteer.json";
+
+    // --no-sandbox is required in GitHub Actions due to issues in Ubuntu (https://github.com/puppeteer/puppeteer/issues/12818).
+    const noSandboxArg = "--no-sandbox";
+
+    let puppeteerConfiguration: PuppeteerConfiguration;
+
+    // Assume that Puppeteer configuration needs to be updated.
+    let updatePuppeteerConfiguration = true;
+
+    // Need to roll back to original Puppeteer configuration afterward.
+    let puppeteerConfigurationContent: string | undefined = undefined;
+
+    if (fs.existsSync(puppeteerConfigurationFile)) {
+        puppeteerConfigurationContent = fs.readFileSync(puppeteerConfigurationFile).toString();
+
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Puppeteer configuration format is known.
+        puppeteerConfiguration = JSON.parse(puppeteerConfigurationContent);
+
+        if (puppeteerConfiguration.args === undefined) {
+            puppeteerConfiguration.args = [noSandboxArg];
+        } else if (!puppeteerConfiguration.args.includes(noSandboxArg)) {
+            puppeteerConfiguration.args.push(noSandboxArg);
+        } else {
+            // Puppeteer configuration already correct.
+            updatePuppeteerConfiguration = false;
+        }
+    } else {
+        puppeteerConfiguration = {
+            args: [noSandboxArg]
+        };
     }
 
-    if (spawnResult.status !== 0) {
-        console.error(`Failed with status ${spawnResult.status}`);
+    if (updatePuppeteerConfiguration) {
+        fs.writeFileSync(puppeteerConfigurationFile, `${JSON.stringify(puppeteerConfiguration, null, 2)}\n`);
+    }
+
+    let status = 0;
+
+    try {
+        const spawnResult = spawnSync("pandoc", args, {
+            stdio: ["inherit", "inherit", "inherit"]
+        });
+
+        if (spawnResult.error !== undefined) {
+            throw spawnResult.error;
+        }
+
+        if (spawnResult.status === null) {
+            throw new Error(`Terminated by signal ${spawnResult.signal}`);
+        }
+
+        if (spawnResult.status !== 0) {
+            console.error(`Failed with status ${spawnResult.status}`);
+            status = spawnResult.status;
+        }
+    } finally {
+        if (updatePuppeteerConfiguration) {
+            if (puppeteerConfigurationContent === undefined) {
+                // No original Puppeteer configuration; delete.
+                fs.rmSync(puppeteerConfigurationFile);
+            } else {
+                // Restore original Puppeteer configuration.
+                fs.writeFileSync(puppeteerConfigurationFile, puppeteerConfigurationContent);
+            }
+        }
+
+        const mermaidFilterErrorFile = "mermaid-filter.err";
+
+        // Delete empty Mermaid filter error file.
+        if (fs.existsSync(mermaidFilterErrorFile) && fs.readFileSync(mermaidFilterErrorFile).toString() === "") {
+            fs.rmSync(mermaidFilterErrorFile);
+        }
     }
 
     // Exit with Pandoc status.
-    process.exit(spawnResult.status);
+    process.exit(status);
 }
