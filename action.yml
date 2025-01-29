@@ -35,6 +35,8 @@ runs:
       shell: bash
       run: |
         npm install
+        echo "Package:"
+        cat package.json
 
 #    - name: Setup Pandoc
 #      uses: pandoc/actions/setup@v1
@@ -42,6 +44,9 @@ runs:
     - name: Build specification
       shell: bash
       run: |
+        echo "Package:"
+        cat package.json
+
         NPM_SCRIPTS=$(npm run)
         
         echo "Scripts:"
