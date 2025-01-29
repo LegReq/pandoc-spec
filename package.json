@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "lint": "eslint .",
-    "build-dist": "tsup src/index.ts --format esm --dts"
+    "build-dist": "tsup src/index.ts --format esm --dts --minify"
   },
   "bin": {
     "pandoc-spec": "bin/pandoc-spec"
