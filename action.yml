@@ -36,9 +36,9 @@ runs:
       run: |
         npm install
 
-    - name: Setup Pandoc
-      uses: pandoc/actions/setup@v1
-
+#    - name: Setup Pandoc
+#      uses: pandoc/actions/setup@v1
+#
     - name: Build specification
       shell: bash
       run: |
@@ -47,6 +47,9 @@ runs:
         echo "Scripts:"
         echo $NPM_SCRIPTS
         
+        echo "Scripts (again):"
+        npm run
+
         # Check for package-defined build.
         GREP_RESULT=$((echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"); echo $?)
         
