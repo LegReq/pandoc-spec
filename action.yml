@@ -35,42 +35,43 @@ runs:
       shell: bash
       run: |
         npm install
-        echo "Package:"
-        cat package.json
 
     - name: Setup Pandoc
       uses: pandoc/actions/setup@v1
 
-    - name: Start terminal session
-      uses: mxschmitt/action-tmate@v3
-
     - name: Build specification
       shell: bash
       run: |
-        echo "Package:"
-        cat package.json
-
         NPM_SCRIPTS=$(npm run)
         
-        echo "Scripts:"
-        echo $NPM_SCRIPTS
-        
-        echo "Scripts (again):"
-        npm run
-
-        # Check for package-defined build.
-        GREP_RESULT=$((echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"); echo $?)
-        
-        echo "Found:"
-        echo $GREP_RESULT
-        
-        if [ $GREP_RESULT -eq 0 ]
+        if [ $? -eq 0 ]
         then
-          echo "Running pandoc-spec npm script"
-          npm run pandoc-spec
+          if [ "$NPM_SCRIPTS" == "" ]
+          then
+            echo "No scripts found."
+            GREP_RESULT=1
+          else
+            echo $NPM_SCRIPTS
+        
+            # Check for package-defined build.
+            echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"
+            GREP_RESULT=$?
+          fi
+        
+          # Update path to include npm binary directory.
+          PATH=$PATH:$PWD/node_modules/.bin
+        
+          if [ $GREP_RESULT -eq 0 ]
+          then
+            echo "Running pandoc-spec npm script"
+            npm run pandoc-spec
+          else
+            echo "Running pandoc-spec shell script"
+            pandoc-spec
+          fi
         else
-          echo "Running pandoc-spec shell script"
-          pandoc-spec
+          # npm command failed.
+          exit $?
         fi
 
     - name: Configure GitHub Pages
