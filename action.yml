@@ -42,10 +42,17 @@ runs:
     - name: Build specification
       shell: bash
       run: |
+        echo "Checking for package-defined build."
+        
         # Check for package-defined build.
         npm run | grep -q "^  pandoc-spec$"
         
-        if [ $? -eq 0 ]
+        result=$?
+        
+        echo "Checked for package-defined build."
+        echo $result
+        
+        if [ $result -eq 0 ]
         then
           echo "Running pandoc-spec npm script"
           npm run pandoc-spec
