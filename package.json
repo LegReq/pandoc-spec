@@ -23,7 +23,8 @@
   ],
   "scripts": {
     "lint": "eslint .",
-    "build-dist": "tsup src/index.ts --format esm --dts --minify"
+    "build-dist": "tsup src/index.ts --format esm --dts --minify",
+    "run": "tsx --eval \"import('./src/index.ts').then((m) => { m.exec() }).catch(e => console.error(e));\""
   },
   "bin": {
     "pandoc-spec": "bin/pandoc-spec"
@@ -38,6 +39,7 @@
   },
   "dependencies": {
     "@legreq/pandoc-defref": "^1.0.5-beta",
+    "glob": "^11.0.1",
     "mermaid-filter": "^1.4.7"
   }
 }

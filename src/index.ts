@@ -3,29 +3,8 @@
 import { spawnSync } from "child_process";
 import fs from "fs";
 import * as path from "node:path";
-
-/**
- * Configuration layout of .puppeteer.json (relevant attributes only).
- */
-interface PuppeteerConfiguration {
-    /**
-     * Arguments.
-     */
-    args: string[] | undefined;
-}
-
-/**
- * Get the module path of path relative to the module root.
- *
- * @param relativePath
- * Path relative to the module root.
- *
- * @returns
- * Module path.
- */
-function modulePath(relativePath: string): string {
-    return decodeURI(new URL(relativePath, import.meta.url).pathname);
-}
+import { copyFiles, modulePath, workingPath } from "./file.js";
+import { PuppeteerConfigurator } from "./puppeteer.js";
 
 /**
  * Pandoc options.
@@ -34,6 +13,8 @@ interface Options {
     debug?: boolean;
 
     verbose?: boolean;
+
+    autoDate?: boolean;
 
     inputFormat?: string;
 
@@ -57,7 +38,15 @@ interface Options {
 
     footerFile?: string;
 
+    inputDirectory?: string;
+
     inputFile: string | string[];
+
+    resourceFiles?: string | string[];
+
+    outputDirectory?: string;
+
+    cleanOutput?: boolean;
 
     outputFile: string;
 
@@ -165,9 +154,16 @@ export function exec(parameterOptions: unknown): never {
         throw new Error("Invalid Options from file and/or parameter");
     }
 
+    const now = new Date();
+    const adjustedNow = new Date(now.getTime() - now.getTimezoneOffset() * 60 * 1000);
+
+    const inputDirectory = options.inputDirectory !== undefined ? path.resolve(options.inputDirectory) : process.cwd();
+    const outputDirectory = options.outputDirectory !== undefined ? path.resolve(options.outputDirectory) : process.cwd();
+
     const args: string[] = [
         "--standalone",
         arg("--verbose", options.verbose),
+        arg("--metadata", options.autoDate ?? false ? `date:${adjustedNow.toISOString().substring(0, 10)}` : undefined),
         arg("--from", options.inputFormat, "markdown"),
         arg("--to", options.outputFormat, "html"),
         arg("--shift-heading-level-by", options.shiftHeadingLevelBy, -1),
@@ -177,21 +173,28 @@ export function exec(parameterOptions: unknown): never {
         arg("--lua-filter", modulePath("../pandoc/include-code-files.lua")),
         arg("--filter", "mermaid-filter"),
         arg("--filter", "pandoc-defref"),
-        ...(options.filters ?? []).map(filter => arg(filter.type !== "json" ? "--lua-filter" : "--filter", filter.name)),
-        arg("--template", options.templateFile, modulePath("../pandoc/template.html")),
-        arg("--include-before-body", options.headerFile),
-        arg("--include-after-body", options.footerFile),
-        arg("--output", options.outputFile),
+        ...(options.filters ?? []).map(filter => filter.type !== "json" ? arg("--lua-filter", workingPath(filter.name)) : arg("--filter", filter.name)),
+        arg("--template", workingPath(options.templateFile), modulePath("../pandoc/template.html")),
+        arg("--include-before-body", workingPath(options.headerFile)),
+        arg("--include-after-body", workingPath(options.footerFile)),
+        arg("--output", path.resolve(outputDirectory, options.outputFile)),
         ...(options.additionalOptions ?? []).map(additionalOption => arg(additionalOption.option, additionalOption.value)),
         ...(!Array.isArray(options.inputFile) ? [options.inputFile] : options.inputFile)
     ].filter(arg => arg !== "");
 
     if (options.debug ?? false) {
-        console.error(`Base URL: ${import.meta.url}`);
+        console.error(`Input directory: ${inputDirectory}`);
+        console.error(`Output directory: ${outputDirectory}`);
+
         console.error(`Pandoc arguments:\n${args.join("\n")}`);
     }
 
-    const outputDirectory = path.dirname(path.resolve(options.outputFile));
+    if (options.cleanOutput ?? false) {
+        fs.rmSync(outputDirectory, {
+            recursive: true,
+            force: true
+        });
+    }
 
     // Create output directory if it doesn't exist.
     if (!fs.existsSync(outputDirectory)) {
@@ -200,42 +203,10 @@ export function exec(parameterOptions: unknown): never {
         });
     }
 
-    const puppeteerConfigurationFile = ".puppeteer.json";
+    const puppeteerConfigurator = new PuppeteerConfigurator(inputDirectory);
 
-    // --no-sandbox is required in GitHub Actions due to issues in Ubuntu (https://github.com/puppeteer/puppeteer/issues/12818).
-    const noSandboxArg = "--no-sandbox";
-
-    let puppeteerConfiguration: PuppeteerConfiguration;
-
-    // Assume that Puppeteer configuration needs to be updated.
-    let updatePuppeteerConfiguration = true;
-
-    // Need to roll back to original Puppeteer configuration afterward.
-    let puppeteerConfigurationContent: string | undefined = undefined;
-
-    if (fs.existsSync(puppeteerConfigurationFile)) {
-        puppeteerConfigurationContent = fs.readFileSync(puppeteerConfigurationFile).toString();
-
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Puppeteer configuration format is known.
-        puppeteerConfiguration = JSON.parse(puppeteerConfigurationContent);
-
-        if (puppeteerConfiguration.args === undefined) {
-            puppeteerConfiguration.args = [noSandboxArg];
-        } else if (!puppeteerConfiguration.args.includes(noSandboxArg)) {
-            puppeteerConfiguration.args.push(noSandboxArg);
-        } else {
-            // Puppeteer configuration already correct.
-            updatePuppeteerConfiguration = false;
-        }
-    } else {
-        puppeteerConfiguration = {
-            args: [noSandboxArg]
-        };
-    }
-
-    if (updatePuppeteerConfiguration) {
-        fs.writeFileSync(puppeteerConfigurationFile, `${JSON.stringify(puppeteerConfiguration, null, 2)}\n`);
-    }
+    // Run Pandoc in input directory.
+    process.chdir(inputDirectory);
 
     let status = 0;
 
@@ -257,15 +228,8 @@ export function exec(parameterOptions: unknown): never {
             status = spawnResult.status;
         }
     } finally {
-        if (updatePuppeteerConfiguration) {
-            if (puppeteerConfigurationContent === undefined) {
-                // No original Puppeteer configuration; delete.
-                fs.rmSync(puppeteerConfigurationFile);
-            } else {
-                // Restore original Puppeteer configuration.
-                fs.writeFileSync(puppeteerConfigurationFile, puppeteerConfigurationContent);
-            }
-        }
+        // Restore Puppeteer configuration.
+        puppeteerConfigurator.finalize();
 
         const mermaidFilterErrorFile = "mermaid-filter.err";
 
@@ -273,6 +237,11 @@ export function exec(parameterOptions: unknown): never {
         if (fs.existsSync(mermaidFilterErrorFile) && fs.readFileSync(mermaidFilterErrorFile).toString() === "") {
             fs.rmSync(mermaidFilterErrorFile);
         }
+    }
+
+    // Copy resource files if Pandoc succeeded and resource files are defined.
+    if (status === 0 && options.resourceFiles !== undefined) {
+        copyFiles(options.resourceFiles, outputDirectory);
     }
 
     // Exit with Pandoc status.
