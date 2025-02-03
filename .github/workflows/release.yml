@@ -10,25 +10,5 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
-
-    if: github.event_name == 'release'
-
-    steps:
-      - name: Build, test, and publish (release)
-        uses: legreq/tsdev/.github/actions/build-test-publish@main
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          vars: ${{ toJSON(vars) }}
-
-  test:
-    runs-on: ubuntu-latest
-
-    if: github.event_name != 'release'
-
-    steps:
-      - name: Build, test, and publish (test)
-        uses: legreq/tsdev/.github/actions/build-test-publish@test-release
-        with:
-          secrets: ${{ toJSON(secrets) }}
-          vars: ${{ toJSON(vars) }}
+      uses: legreq/tsdev/.github/workflows/_release.yml@main
+      secrets: inherit
