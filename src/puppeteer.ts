@@ -52,16 +52,15 @@ export class PuppeteerConfigurator {
 
         this._inputConfigurationFile = path.resolve(inputDirectory, configurationFile);
 
-        const workingConfigurationFile = path.resolve(configurationFile);
-
         if (fs.existsSync(this._inputConfigurationFile)) {
+            // Assume file is only partially complete.
             this._state = State.FromInputPartial;
 
             this._configurationFileContent = fs.readFileSync(this._inputConfigurationFile).toString();
-        } else if (fs.existsSync(workingConfigurationFile)) {
+        } else if (fs.existsSync(configurationFile)) {
             this._state = State.FromWorking;
 
-            this._configurationFileContent = fs.readFileSync(workingConfigurationFile).toString();
+            this._configurationFileContent = fs.readFileSync(configurationFile).toString();
         } else {
             this._state = State.NotFound;
 

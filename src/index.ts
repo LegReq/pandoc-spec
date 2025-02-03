@@ -130,8 +130,10 @@ function arg<T>(option: string, value: T | undefined, defaultValue?: T): string 
  * Options from which to build command-line arguments.
  */
 export function exec(parameterOptions: unknown): never {
-    const fileOptions: unknown = fs.existsSync("./pandoc-spec.options.json") ?
-        JSON.parse(fs.readFileSync("./pandoc-spec.options.json", {
+    const configurationFile = "pandoc-spec.options.json";
+
+    const fileOptions: unknown = fs.existsSync(configurationFile) ?
+        JSON.parse(fs.readFileSync(configurationFile, {
             encoding: "utf8"
         })) :
         undefined;
