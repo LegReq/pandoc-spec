@@ -30,7 +30,7 @@
     "pandoc-spec": "bin/pandoc-spec"
   },
   "devDependencies": {
-    "@legreq/tsdev": "^1.0.1-beta",
+    "@legreq/tsdev": "^1.0.2-beta",
     "eslint": "^9.19.0",
     "ts-node": "^10.9.2",
     "tsup": "^8.3.6",
@@ -38,7 +38,7 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@legreq/pandoc-defref": "^1.0.5-beta",
+    "@legreq/pandoc-defref": "^1.0.6-beta",
     "glob": "^11.0.1",
     "mermaid-filter": "^1.4.7"
   }
