@@ -44,6 +44,9 @@ runs:
     - name: Build specification
       shell: bash
       run: |
+        # Exit codes are handled by script.
+        set +e
+        
         npm run
         NPM_SCRIPTS=$(npm run)
         
