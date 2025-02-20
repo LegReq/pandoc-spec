@@ -50,8 +50,6 @@ runs:
         npm run
         NPM_SCRIPTS=$(npm run)
         
-        echo "Got scripts"
-        
         if [ $? -eq 0 ]
         then
           if [ "$NPM_SCRIPTS" == "" ]
@@ -61,13 +59,9 @@ runs:
           else
             echo $NPM_SCRIPTS
         
-            echo "Running grep"
-        
             # Check for package-defined build.
             echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"
             GREP_RESULT=$?
-        
-            echo "Ran grep $GREP_RESULT"
           fi
         
           # Update path to include npm binary directory.
