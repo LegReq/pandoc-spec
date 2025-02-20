@@ -47,7 +47,6 @@ runs:
         # Exit codes are handled by script.
         set +e
         
-        npm run
         NPM_SCRIPTS=$(npm run)
         
         if [ $? -eq 0 ]
