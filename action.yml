@@ -57,10 +57,10 @@ runs:
             echo "No scripts found."
             GREP_RESULT=1
           else
-            echo $NPM_SCRIPTS
+            echo "$NPM_SCRIPTS"
         
             # Check for package-defined build.
-            echo $NPM_SCRIPTS | grep -q "^  pandoc-spec$"
+            echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec$"
             GREP_RESULT=$?
           fi
         
