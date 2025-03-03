@@ -1,6 +1,6 @@
 {
   "name": "@legreq/pandoc-spec",
-  "version": "1.0.10-beta",
+  "version": "1.0.11-beta",
   "description": "Pandoc specification builder",
   "type": "module",
   "main": "dist/index.js",
@@ -23,19 +23,13 @@
   ],
   "scripts": {
     "lint": "eslint .",
-    "build-dist": "tsup src/index.ts --format esm --dts --minify",
-    "run": "tsx --eval \"import('./src/index.ts').then((m) => { m.exec() }).catch(e => console.error(e));\""
+    "build-dist": "tsup src/index.ts --format esm --dts --minify"
   },
   "bin": {
     "pandoc-spec": "bin/pandoc-spec"
   },
   "devDependencies": {
-    "@legreq/tsdev": "beta",
-    "eslint": "^9.19.0",
-    "ts-node": "^10.9.2",
-    "tsup": "^8.3.6",
-    "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "@legreq/tsdev": "beta"
   },
   "dependencies": {
     "@legreq/pandoc-defref": "beta",
