@@ -1,4 +1,4 @@
-#!/usr/bin/env node
-import { exec } from "../dist/index.js";
+#!/usr/bin/env tsx
+import { exec } from "../src/index.js";
 
 exec();
