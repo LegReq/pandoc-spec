@@ -1,6 +1,6 @@
 {
   "name": "@legreq/pandoc-spec",
-  "version": "1.0.11-beta",
+  "version": "1.0.12-beta",
   "description": "Pandoc specification builder",
   "type": "module",
   "main": "dist/index.js",

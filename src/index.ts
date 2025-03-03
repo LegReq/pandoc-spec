@@ -291,7 +291,7 @@ export function exec(parameterOptions?: unknown): never {
 
     if (status === 0) {
         // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
-        copyFiles(expand(options.cssFile).filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+/.test(cssFile)), outputDirectory);
+        copyFiles(expand(options.cssFile).filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), outputDirectory);
 
         // Copy resource files if defined.
         if (options.resourceFile !== undefined) {
