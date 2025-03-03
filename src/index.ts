@@ -58,7 +58,9 @@ interface Options {
 
     inputFile: string | string[];
 
-    resourceFiles?: string | string[];
+    cssFile?: string | string[];
+
+    resourceFile?: string | string[];
 
     outputDirectory?: string;
 
@@ -97,6 +99,35 @@ function isNonNullObject(value: unknown): value is NonNullable<object> {
  */
 function isOptions(value: NonNullable<object>): value is Options {
     return "inputFile" in value && "outputFile" in value;
+}
+
+/**
+ * Expand value to an array of strings.
+ *
+ * @param value
+ * Value to expand.
+ *
+ * @returns
+ * Array of strings.
+ */
+function expand(value: string | string[] | undefined): string[] {
+    let result: string[];
+
+    switch (typeof value) {
+        case "undefined":
+            result = [];
+            break;
+
+        case "string":
+            result = [value];
+            break;
+
+        default:
+            result = value;
+            break;
+    }
+
+    return result;
 }
 
 /**
@@ -145,7 +176,7 @@ function arg<T>(option: string, value: T | undefined, defaultValue?: T): string 
  * @param parameterOptions
  * Options from which to build command-line arguments.
  */
-export function exec(parameterOptions: unknown): never {
+export function exec(parameterOptions?: unknown): never {
     const configurationFile = "pandoc-spec.options.json";
 
     const fileOptions: unknown = fs.existsSync(configurationFile) ?
@@ -195,9 +226,10 @@ export function exec(parameterOptions: unknown): never {
         arg("--template", workingPath(options.templateFile), modulePath("../pandoc/template.html")),
         arg("--include-before-body", workingPath(options.headerFile)),
         arg("--include-after-body", workingPath(options.footerFile)),
+        ...expand(options.cssFile).map(cssFile => arg("--css", cssFile)),
         arg("--output", path.resolve(outputDirectory, options.outputFile)),
         ...(options.additionalOptions ?? []).map(additionalOption => arg(additionalOption.option, additionalOption.value)),
-        ...(!Array.isArray(options.inputFile) ? [options.inputFile] : options.inputFile)
+        ...expand(options.inputFile)
     ].filter(arg => arg !== "");
 
     if (options.debug ?? false) {
@@ -257,9 +289,14 @@ export function exec(parameterOptions: unknown): never {
         }
     }
 
-    // Copy resource files if Pandoc succeeded and resource files are defined.
-    if (status === 0 && options.resourceFiles !== undefined) {
-        copyFiles(options.resourceFiles, outputDirectory);
+    if (status === 0) {
+        // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
+        copyFiles(expand(options.cssFile).filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+/.test(cssFile)), outputDirectory);
+
+        // Copy resource files if defined.
+        if (options.resourceFile !== undefined) {
+            copyFiles(options.resourceFile, outputDirectory);
+        }
     }
 
     // Exit with Pandoc status.
