@@ -47,36 +47,48 @@ runs:
         # Exit codes are handled by script.
         set +e
         
-        NPM_SCRIPTS=$(npm run)
-        
-        if [ $? -eq 0 ]
+        if [[ -f package.json ]]
         then
-          if [ "$NPM_SCRIPTS" == "" ]
+          NPM_SCRIPTS=$(npm run)
+          
+          if [[ $? -eq 0 ]]
           then
-            echo "No scripts found."
-            GREP_RESULT=1
+            if [[ "$NPM_SCRIPTS" == "" ]]
+            then
+              echo "No scripts found."
+              GREP_RESULT=1
+            else
+              echo "$NPM_SCRIPTS"
+          
+              # Check for package-defined build.
+              echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec$"
+              GREP_RESULT=$?
+            fi
           else
-            echo "$NPM_SCRIPTS"
-        
-            # Check for package-defined build.
-            echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec$"
-            GREP_RESULT=$?
-          fi
-        
-          # Update path to include npm binary directory.
-          PATH=$PATH:$PWD/node_modules/.bin
-        
-          if [ $GREP_RESULT -eq 0 ]
-          then
-            echo "Running pandoc-spec npm script"
-            npm run pandoc-spec
-          else
-            echo "Running pandoc-spec shell script"
-            pandoc-spec
+            # npm command failed.
+            exit $?
           fi
         else
-          # npm command failed.
-          exit $?
+          # No package.json.
+          GREP_RESULT=1
+        fi
+        
+        if [[ -f $PWD/node_modules/.bin/pandoc-spec ]]
+        then
+          # Update path to include npm binary directory.
+          PATH=$PATH:$PWD/node_modules/.bin
+        else
+          # Pandoc specification builder not installed in npm package; install globally.
+          npm install @legreq/pandoc-spec --global
+        fi
+      
+        if [[ $GREP_RESULT -eq 0 ]]
+        then
+          echo "Running pandoc-spec npm script"
+          npm run pandoc-spec
+        else
+          echo "Running pandoc-spec shell script"
+          pandoc-spec
         fi
 
     - name: Configure GitHub Pages
