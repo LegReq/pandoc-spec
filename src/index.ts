@@ -25,7 +25,7 @@ import { PuppeteerConfigurator } from "./puppeteer.js";
 /**
  * Pandoc options.
  */
-interface Options {
+export interface Options {
     debug?: boolean;
 
     verbose?: boolean;
@@ -45,7 +45,7 @@ interface Options {
     filters?: Array<{
         type?: "lua" | "json";
 
-        name: string;
+        path: string;
     }>;
 
     templateFile?: string;
@@ -222,8 +222,8 @@ export function exec(parameterOptions?: unknown): never {
         arg("--lua-filter", modulePath("../pandoc/include-code-files.lua")),
         arg("--filter", "mermaid-filter"),
         arg("--filter", "pandoc-defref"),
-        ...(options.filters ?? []).map(filter => filter.type !== "json" ? arg("--lua-filter", workingPath(filter.name)) : arg("--filter", filter.name)),
-        arg("--template", workingPath(options.templateFile), modulePath("../pandoc/template.html")),
+        ...(options.filters ?? []).map(filter => filter.type !== "json" ? arg("--lua-filter", workingPath(filter.path)) : arg("--filter", filter.path.includes("/") ? workingPath(filter.path) : filter.path)),
+        arg("--template", workingPath(options.templateFile), options.outputFormat === undefined || options.outputFormat === "html" ? modulePath("../pandoc/template.html") : undefined),
         arg("--include-before-body", workingPath(options.headerFile)),
         arg("--include-after-body", workingPath(options.footerFile)),
         ...expand(options.cssFile).map(cssFile => arg("--css", cssFile)),
@@ -289,7 +289,7 @@ export function exec(parameterOptions?: unknown): never {
         }
     }
 
-    if (status === 0) {
+    if (status === 0 && outputDirectory !== inputDirectory) {
         // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
         copyFiles(expand(options.cssFile).filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), outputDirectory);
 
