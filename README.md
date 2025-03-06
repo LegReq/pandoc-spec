@@ -32,34 +32,38 @@ Four filters are pre-defined and always available:
 
 ## Configuration
 
-| Attribute             | Type               | Required? | Default    | Description                                                                                                                                                                                                                                                                                                                                               |
-|-----------------------|--------------------|-----------|------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `debug`               | boolean            | false     | false      | If true, dumps the input and output directory and the Pandoc command-line to stderr prior to execution.                                                                                                                                                                                                                                                   |
-| `verbose`             | boolean            | false     | false      | If true, passes --verbose to Pandoc for verbose output.                                                                                                                                                                                                                                                                                                   |
-| `autoDate`            | boolean            | false     | false      | If true, adds a `date` value to the metadata in the format YYYY-MM-DD.                                                                                                                                                                                                                                                                                    |
-| `inputFormat`         | string             | false     | markdown   | Input file format.                                                                                                                                                                                                                                                                                                                                        |
-| `outputFormat`        | string             | false     | html       | Output file format.                                                                                                                                                                                                                                                                                                                                       |
-| `shiftHeadingLevelBy` | number             | false     | -1         | The amount by which to shift the section heading level. A value of -1 takes heading level 1 as the title.                                                                                                                                                                                                                                                 |
-| `numberSections`      | boolean            | false     | true       | If true, sections are numbered automatically.                                                                                                                                                                                                                                                                                                             |
-| `generateTOC`         | boolean            | false     | true       | If true, a table of contents is generated from the headings.                                                                                                                                                                                                                                                                                              |
-| `filters`             | object[]           | false     | []         | Zero or more additional filters to be applied to the transformation.                                                                                                                                                                                                                                                                                      |
-| - `type`              | string             | false     | "lua"      | Filter type, either "lua" or "json". [Lua](https://www.lua.org/) filters are integrated directly by Pandoc; JSON filters process the JSON AST from stdin and write updated JSON AST to stdout.                                                                                                                                                            |
-| - `path`              | string             | true      |            | Either the path to a script for a Lua filter, relative to the _starting_ directory, or an operating system command for a JSON filter. If an operating system command and it contains a path delimiter ('/'), it is assumed to be relative to the _starting_ directory.                                                                                    |
-| `templateFile`        | string             | false     | (internal) | The Pandoc template to use in generating the output, relative to the starting directory. If none is provided and `outputFormat` is "html", an internal template ("pandoc/template.html") relative to the _package root directory_ is used.                                                                                                                |
-| `headerFile`          | string             | false     |            | A header file to apply to the template, relative to the _starting_ directory.                                                                                                                                                                                                                                                                             |
-| `footerFile`          | string             | false     |            | A footer file to apply to the template, relative to the _starting_ directory.                                                                                                                                                                                                                                                                             |
-| `inputDirectory`      | string             | false     | .          | The directory in which the input file or files reside. This will be the working directory while Pandoc is running.                                                                                                                                                                                                                                        |
-| `inputFile`           | string \| string[] | true      |            | One or more input files, either a single string (one input file) or an array of strings (multiple input files), relative to the _input_ directory.                                                                                                                                                                                                        |
-| `cssFile`             | string \| string[] | false     |            | Zero or more CSS files, either a single string (one CSS file) or an array of strings (multiple CSS files), relative to the _input_ directory. CSS files are copied to the output directory with their relative paths preserved.                                                                                                                           |
-| `resourceFile`        | string \| string[] | false     |            | Zero or more resource files, either a single string (one resource file) or an array of strings (multiple resource files), relative to the _input_ directory. Resource files may be expressed as [glob patterns](https://en.wikipedia.org/wiki/Glob_(programming)). Resource files are copied to the output directory with their relative paths preserved. |
-| `outputDirectory`     | string             | false     |            | The directory to which the output file will be written and CSS and resource files will be copied.                                                                                                                                                                                                                                                         |
-| `cleanOutput`         | boolean            | false     |            | If true, the output directory is cleaned before Pandoc is run. Doing so may interfere with development tools such as webpack that watch for changes and refresh the browser if changes are detected, causing a 404 error while the build is going on.                                                                                                     |
-| `outputFile`          | string             | true      |            | The name of the output file, relative to the _output_ directory.                                                                                                                                                                                                                                                                                          |
-| `additionalOptions`   | object[]           | false     | []         | Additional options to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                                |
-| - `option`            | string             | true      |            | The option to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                                        |
-| - `value`             | string             | false     |            | The value for the option, if any, to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                 |
+| Attribute             | Type               | Required? | Default                  | Description                                                                                                                                                                                                                                                                                                                                               |
+|-----------------------|--------------------|-----------|--------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `optionsFile`         | string             | false     | pandoc-spec.options.json | Path of options file. Allows the command-line to specify the an options file other than the default.                                                                                                                                                                                                                                                      |
+| `debug`               | boolean            | false     | false                    | If true, dumps the input and output directory and the Pandoc command-line to stderr prior to execution.                                                                                                                                                                                                                                                   |
+| `verbose`             | boolean            | false     | false                    | If true, passes --verbose to Pandoc for verbose output.                                                                                                                                                                                                                                                                                                   |
+| `autoDate`            | boolean            | false     | false                    | If true, adds a `date` value to the metadata in the format YYYY-MM-DD.                                                                                                                                                                                                                                                                                    |
+| `inputFormat`         | string             | false     | markdown                 | Input file format.                                                                                                                                                                                                                                                                                                                                        |
+| `outputFormat`        | string             | false     | html                     | Output file format.                                                                                                                                                                                                                                                                                                                                       |
+| `shiftHeadingLevelBy` | number             | false     | -1                       | The amount by which to shift the section heading level. A value of -1 takes heading level 1 as the title.                                                                                                                                                                                                                                                 |
+| `numberSections`      | boolean            | false     | true                     | If true, sections are numbered automatically.                                                                                                                                                                                                                                                                                                             |
+| `generateTOC`         | boolean            | false     | true                     | If true, a table of contents is generated from the headings.                                                                                                                                                                                                                                                                                              |
+| `filters`             | object[]           | false     | []                       | Zero or more additional filters to be applied to the transformation.                                                                                                                                                                                                                                                                                      |
+| - `type`              | string             | false     | "lua"                    | Filter type, either "lua" or "json". [Lua](https://www.lua.org/) filters are integrated directly by Pandoc; JSON filters process the JSON AST from stdin and write updated JSON AST to stdout.                                                                                                                                                            |
+| - `path`              | string             | true      |                          | Either the path to a script for a Lua filter, relative to the _starting_ directory, or an operating system command for a JSON filter. If an operating system command and it contains a path delimiter ('/'), it is assumed to be relative to the _starting_ directory.                                                                                    |
+| `templateFile`        | string             | false     | (internal)               | The Pandoc template to use in generating the output, relative to the starting directory. If none is provided and `outputFormat` is "html", an internal template ("pandoc/template.html") relative to the _package root directory_ is used.                                                                                                                |
+| `headerFile`          | string             | false     |                          | A header file to apply to the template, relative to the _starting_ directory.                                                                                                                                                                                                                                                                             |
+| `footerFile`          | string             | false     |                          | A footer file to apply to the template, relative to the _starting_ directory.                                                                                                                                                                                                                                                                             |
+| `inputDirectory`      | string             | false     | .                        | The directory in which the input file or files reside. This will be the working directory while Pandoc is running.                                                                                                                                                                                                                                        |
+| `inputFile`           | string \| string[] | true      |                          | One or more input files, either a single string (one input file) or an array of strings (multiple input files), relative to the _input_ directory.                                                                                                                                                                                                        |
+| `cssFile`             | string \| string[] | false     |                          | Zero or more CSS files, either a single string (one CSS file) or an array of strings (multiple CSS files), relative to the _input_ directory. CSS files are copied to the output directory with their relative paths preserved.                                                                                                                           |
+| `resourceFile`        | string \| string[] | false     |                          | Zero or more resource files, either a single string (one resource file) or an array of strings (multiple resource files), relative to the _input_ directory. Resource files may be expressed as [glob patterns](https://en.wikipedia.org/wiki/Glob_(programming)). Resource files are copied to the output directory with their relative paths preserved. |
+| `outputDirectory`     | string             | false     |                          | The directory to which the output file will be written and CSS and resource files will be copied.                                                                                                                                                                                                                                                         |
+| `cleanOutput`         | boolean            | false     |                          | If true, the output directory is cleaned before Pandoc is run for the first time.                                                                                                                                                                                                                                                                         |
+| `outputFile`          | string             | true      |                          | The name of the output file, relative to the _output_ directory.                                                                                                                                                                                                                                                                                          |
+| `additionalOptions`   | object[]           | false     | []                       | Additional options to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                                |
+| - `option`            | string             | true      |                          | The option to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                                        |
+| - `value`             | string             | false     |                          | The value for the option, if any, to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                 |
+| `watch`               | boolean            | false     |                          | If true, the input directory is watched for changes and Pandoc is rerun when detected. Ignored if running inside a GitHub Action.                                                                                                                                                                                                                         |
+| `watchTemplateFile`   | boolean            | false     |                          | If true, the template file is watched for changes and Pandoc is rerun when detected. Ignored if watch is false.                                                                                                                                                                                                                                           |
+| `watchWait`           | number             | false     | 2000                     | Time in milliseconds to wait for changes to be fully written before rerunning Pandoc.                                                                                                                                                                                                                                                                     |
 
-The Pandoc specification builder looks for the file `pandoc-spec.options.json` in the starting directory. If present, this file is expected to be structured according to the above. For example:
+The Pandoc Specification Builder looks for the file `pandoc-spec.options.json` in the starting directory. If present, this file is expected to be structured according to the above. For example:
 
 ```json
 {
@@ -84,32 +88,68 @@ The Pandoc specification builder looks for the file `pandoc-spec.options.json` i
 
 ## Running the Builder
 
-There are three ways to run the Pandoc specification builder: from code, from the command line, or as a GitHub Action.
-In all cases, it looks for `pandoc-spec.options.json` in the starting directory.
+There are three ways to run the Pandoc Specification Builder: from code, from the command line, or as a GitHub Action.
+In all cases, the options are built from two sources: the options file (if present) and the options object passed as a
+parameter. The options file defaults to `pandoc-spec.options.json` in the starting directory, but this may be overridden
+by setting the `optionsFile` property in the options object passed as a parameter.
 
 ### Code
 
-The code option allows options specified in the configuration to be overridden. This enables debugging and leaves the
-rest to `pandoc-spec.options.json`.
+The code option allows options specified in the options file to be overridden. This example enables debugging and 
+verbosity and leaves the rest to `pandoc-spec.options.json`.
 
 ```typescript
-import { exec, type Options } from "@legreq/pandoc-spec";
+import { type Options, pandocSpec } from "@legreq/pandoc-spec";
 
 const options: Partial<Options> = {
-    debug: true
+  debug: true,
+  verbose: true
 };
 
-exec(options);
+pandocSpec(options);
 ```
 
-### Command line
+### Command Line
 
-The command line is a simple binary that takes no parameters. To run it, call `pandoc-spec`.
+The command line is script that takes parameters matching the options properties, using standard command-line syntax.
+
+Given the following in `pandoc-spec.options.json`:
+
+```json
+{
+  "verbose": true,
+  "autoDate": true,
+  "inputDirectory": "chapters",
+  "cssFile": "css/spec.css",
+  "outputDirectory": "_site",
+  "cleanOutput": true,
+  "outputFile": "index.html"
+}
+```
+
+The command-line to add the input files and override some of the options could look like this:
+
+```bash
+pandoc-spec --debug --no-verbose --input-file "Index.md" \
+  --input-file "Introduction.md" --input-file "Use Cases.md" \
+  --input-file "ABNF.md" --input-file "Specification.md" \
+  --input-file "References.md"  --input-file "Appendix.md"
+  --output-directory "test" --watch
+```
+
+Note the following:
+
+* All options are in lower-case with hyphen separators and are preceded by two hyphens.
+* Boolean options are enabled by their name, disabled by "no-" followed by their name.
+* Options that take arrays may be repeated, and the resulting arrays will be in the same order as on the command-line.
+* Two additional options are available:
+  * "--help" shows the command-line syntax.
+  * "--version" displays the current version.
 
 ### GitHub Action
 
-The GitHub Action runs within a workflow. If `package.json` exists and the script `pandoc-spec` is defined within it,
-the Pandoc specification builder will be called via `npm run pandoc-spec`; otherwise, it will be called via
+The GitHub Action runs within a workflow. If `package.json` exists and the script `pandoc-spec-action` is defined within
+it, the Pandoc Specification Builder will be called via `npm run pandoc-spec-action`; otherwise, it will be called via
 `pandoc-spec`.
 
 The GitHub Action is available at `legreq/pandoc-spec@v1` and defines the following input parameters:
@@ -144,7 +184,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Pandoc specification builder
+      - name: Pandoc Specification Builder
         uses: legreq/pandoc-spec@v1
         with:
           include-repository: true
