@@ -1,7 +1,7 @@
 {
   "name": "@legreq/pandoc-spec",
-  "version": "1.0.13-beta",
-  "description": "Pandoc specification builder",
+  "version": "1.0.14-beta",
+  "description": "Pandoc Specification Builder",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
@@ -19,11 +19,13 @@
   },
   "keywords": [
     "pandoc",
-    "specification"
+    "specification",
+    "mermaid"
   ],
   "scripts": {
     "lint": "eslint .",
-    "build-dist": "tsup src/index.ts --format esm --dts --minify"
+    "build-dist": "tsup src/index.ts --format esm --dts --minify",
+    "pandoc-spec-local": "tsx bin/pandoc-spec-local $*"
   },
   "bin": {
     "pandoc-spec": "bin/pandoc-spec"
@@ -33,7 +35,9 @@
   },
   "dependencies": {
     "@legreq/pandoc-defref": "beta",
+    "decamelize": "^6.0.0",
     "glob": "^11.0.1",
+    "meow": "^13.2.0",
     "mermaid-filter": "^1.4.7"
   }
 }

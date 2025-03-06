@@ -1,4 +1,4 @@
-name: Pandoc specification builder
+name: Pandoc Specification Builder
 description: Sets up Pandoc and runs either a pre-defined pandoc-spec script in package.json or the pandoc-spec shell script.
 
 inputs:
@@ -61,7 +61,7 @@ runs:
               echo "$NPM_SCRIPTS"
           
               # Check for package-defined build.
-              echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec$"
+              echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec-action$"
               GREP_RESULT=$?
             fi
           else
@@ -78,14 +78,14 @@ runs:
           # Update path to include npm binary directory.
           PATH=$PATH:$PWD/node_modules/.bin
         else
-          # Pandoc specification builder not installed in npm package; install globally.
+          # Pandoc Specification Builder not installed in npm package; install globally.
           npm install @legreq/pandoc-spec --global
         fi
       
         if [[ $GREP_RESULT -eq 0 ]]
         then
-          echo "Running pandoc-spec npm script"
-          npm run pandoc-spec
+          echo "Running pandoc-spec-action npm script"
+          npm run pandoc-spec-action
         else
           echo "Running pandoc-spec shell script"
           pandoc-spec
