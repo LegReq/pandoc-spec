@@ -69,7 +69,6 @@
 
 <body>
 <div id="outer-container" class="row">
-    <div id="left-margin" class="col-md-1 d-print-none"></div>
     <div id="inner-container" class="col vh-100-media overflow-hidden d-flex flex-column">
         <div id="header" class="row">
             $for(include-before)$
@@ -81,10 +80,11 @@
             $if(toc)$
             <!-- Table of contents will move to the top below small screen. -->
             <div id="toc" class="col-sm-3 mh-100 overflow-auto d-print-none">
+                <header><span>Table of Contents</span></header>
                 $toc$
             </div>
             $endif$
-            <main id="content" class="col mh-100 overflow-auto">
+            <main id="content" class="col mh-100 overflow-y-auto overflow-x-hidden">
                 $body$
             </main>
         </div>
@@ -95,7 +95,6 @@
             $endfor$
         </div>
     </div>
-    <div id="right-margin" class="col-md-1 d-print-none"></div>
 </div>
 
 <!-- JQuery -->
