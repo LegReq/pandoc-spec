@@ -16,7 +16,7 @@
 
 import decamelize from "decamelize";
 import meow, { type Flag, type FlagType } from "meow";
-import { type Options, pandocSpec } from "./pandoc-spec.js";
+import { type AdditionalOption, type Filter, type Options, pandocSpec, type Variable } from "./pandoc-spec.js";
 
 /**
  * Extended CLI flag.
@@ -31,6 +31,17 @@ interface ExtendedFlag<PrimitiveType extends FlagType, Type, IsMultiple = false>
      * Help description.
      */
     description: string;
+
+    /**
+     * Function to parse components into object.
+     *
+     * @param components
+     * Parsed components.
+     *
+     * @returns
+     * Object constructed from parsed components.
+     */
+    parseMapper?: (components: string[]) => unknown;
 }
 
 /**
@@ -84,7 +95,33 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         type: "string",
         isMultiple: true,
         cliName: "filter",
-        description: "Filter to be applied to the transformation. Format is [type:]path, where type is \"lua\" or \"json\". If type is not provided, default is \"lua\"."
+        description: "Filter to be applied to the transformation. Format is [type:]path, where type is \"lua\" or \"json\". If type is not provided, default is \"lua\".",
+        parseMapper: (components) => {
+            let filter: Filter;
+
+            switch (components.length) {
+                case 1:
+                    filter = {
+                        type: "lua",
+                        path: components[0]
+                    };
+                    break;
+
+                case 2:
+                    filter = {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Let Pandoc handle invalid type.
+                        type: components[0] as "lua" | "json",
+                        path: components[1]
+                    };
+                    break;
+
+                default: {
+                    throw new Error(`Invalid filter: ${components.join(":")}`);
+                }
+            }
+
+            return filter;
+        }
     },
     templateFile: {
         type: "string",
@@ -98,23 +135,56 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         type: "string",
         description: "A footer file to apply to the template"
     },
+    variables: {
+        type: "string",
+        isMultiple: true,
+        cliName: "variable",
+        description: "Variable of the format key[:value] to be passed to Pandoc. If no value is specified, defaults to \"true\".",
+        parseMapper: (components) => {
+            let variable: Variable;
+
+            switch (components.length) {
+                case 1:
+                    variable = {
+                        key: components[0]
+                    };
+                    break;
+
+                case 2:
+                    variable = {
+                        key: components[0],
+                        value: components[1]
+                    };
+                    break;
+
+                default: {
+                    throw new Error(`Invalid variable: ${components.join(":")}`);
+                }
+            }
+
+            return variable;
+        }
+    },
     inputDirectory: {
         type: "string",
         description: "The directory in which the input file or files reside."
     },
-    inputFile: {
+    inputFiles: {
         type: "string",
         isMultiple: true,
+        cliName: "inputFile",
         description: "Input file."
     },
-    cssFile: {
+    cssFiles: {
         type: "string",
         isMultiple: true,
+        cliName: "cssFile",
         description: "CSS file."
     },
-    resourceFile: {
+    resourceFiles: {
         type: "string",
         isMultiple: true,
+        cliName: "resourceFile",
         description: "Resource file (may be glob pattern) to be copied to the output directory."
     },
     outputDirectory: {
@@ -133,7 +203,17 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         type: "string",
         isMultiple: true,
         cliName: "additionalOption",
-        description: "Additional options to be added to the Pandoc command line. Format is option[:value]."
+        description: "Additional options to be added to the Pandoc command line. Format is option[:value].",
+        parseMapper: (components) => {
+            if (components.length !== 2) {
+                throw new Error(`Invalid additional option: ${components.join(":")}`);
+            }
+
+            return {
+                option: components[0],
+                value: components[1]
+            } satisfies AdditionalOption;
+        }
     },
     watch: {
         type: "boolean",
@@ -225,39 +305,19 @@ export function exec(): number {
 
         // Ignore any options added automatically by CLI processor and any values that are zero length arrays.
         if (propertyName !== undefined && (!Array.isArray(value) || value.length !== 0)) {
-            switch (cliName) {
-                case "filter": {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Filter is defined as string.
-                    const parsedFilter = (value as string).split(":");
-                    options[propertyName] = parsedFilter.length === 1 ?
-                        {
-                            option: parsedFilter[0]
-                        } :
-                        {
-                            option: parsedFilter[0],
-                            value: parsedFilter[1]
-                        };
-                }
-                    break;
+            const parseMapper = cliFlags[cliName].parseMapper;
 
-                case "additionalOption": {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Additional option is defined as string.
-                    const parsedAdditionalOption = (value as string).split(":");
-                    options[propertyName] = parsedAdditionalOption.length === 1 ?
-                        {
-                            path: parsedAdditionalOption[0]
-                        } :
-                        {
-                            type: parsedAdditionalOption[0],
-                            path: parsedAdditionalOption[1]
-                        };
+            if (parseMapper !== undefined) {
+                if (!Array.isArray(value)) {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Options with parse keys are strings.
+                    options[propertyName] = parseMapper((value as string).split(":"));
+                } else {
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Options with parse keys are strings.
+                    options[propertyName] = (value as string[]).map(element => parseMapper(element.split(":")));
                 }
-                    break;
-
-                default:
-                    // Add option as is.
-                    options[propertyName] = value;
-                    break;
+            } else {
+                // Add option as is.
+                options[propertyName] = value;
             }
         }
     }

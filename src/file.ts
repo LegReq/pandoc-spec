@@ -60,15 +60,15 @@ export function workingPath(relativePath: string | undefined): string | undefine
 /**
  * Copy files matching glob patterns to a directory.
  *
- * @param pattern
- * Glob pattern(s).
+ * @param patterns
+ * Glob patterns.
  *
  * @param toDirectory
  * Directory to which to copy files.
  */
-export function copyFiles(pattern: string | string[], toDirectory: string): void {
+export function copyFiles(patterns: string[], toDirectory: string): void {
     // Source files are expected to be relative to current directory.
-    for (const sourceFile of globIterateSync(pattern)) {
+    for (const sourceFile of globIterateSync(patterns)) {
         const destinationFile = path.resolve(toDirectory, sourceFile);
 
         if (destinationFile === path.resolve(sourceFile)) {
