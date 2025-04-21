@@ -24,6 +24,33 @@ import { copyFiles, modulePath, workingPath } from "./file.js";
 import { PuppeteerConfigurator } from "./puppeteer.js";
 
 /**
+ * Filter.
+ */
+export interface Filter {
+    type: "lua" | "json";
+
+    path: string;
+}
+
+/**
+ * Variable.
+ */
+export interface Variable {
+    key: string;
+
+    value?: string;
+}
+
+/**
+ *  Additional option.
+ */
+export interface AdditionalOption {
+    option: string;
+
+    value?: string;
+}
+
+/**
  * Pandoc options.
  */
 export interface Options {
@@ -45,11 +72,7 @@ export interface Options {
 
     generateTOC?: boolean;
 
-    filters?: Array<{
-        type?: "lua" | "json";
-
-        path: string;
-    }>;
+    filters?: Filter[];
 
     templateFile?: string;
 
@@ -57,13 +80,15 @@ export interface Options {
 
     footerFile?: string;
 
+    variables?: Variable[];
+
     inputDirectory?: string;
 
-    inputFile: string | string[];
+    inputFiles: string[];
 
-    cssFile?: string | string[];
+    cssFiles?: string[];
 
-    resourceFile?: string | string[];
+    resourceFiles?: string[];
 
     outputDirectory?: string;
 
@@ -71,11 +96,7 @@ export interface Options {
 
     outputFile: string;
 
-    additionalOptions?: Array<{
-        option: string;
-
-        value?: string;
-    }>;
+    additionalOptions?: AdditionalOption[];
 
     watch?: boolean;
 
@@ -107,36 +128,7 @@ function isNonNullObject(value: unknown): value is NonNullable<object> {
  * True if value has all non-nullable Options properties.
  */
 function isOptions(value: NonNullable<object>): value is Options {
-    return "inputFile" in value && "outputFile" in value;
-}
-
-/**
- * Expand value to an array of strings.
- *
- * @param value
- * Value to expand.
- *
- * @returns
- * Array of strings.
- */
-function expand(value: string | string[] | undefined): string[] {
-    let result: string[];
-
-    switch (typeof value) {
-        case "undefined":
-            result = [];
-            break;
-
-        case "string":
-            result = [value];
-            break;
-
-        default:
-            result = value;
-            break;
-    }
-
-    return result;
+    return "inputFiles" in value && "outputFile" in value;
 }
 
 /**
@@ -241,6 +233,16 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
     const templateFile = workingPath(options.templateFile ?? (options.outputFormat === undefined || options.outputFormat === "html" ? modulePath("../pandoc/template.html") : undefined));
 
+    const variables = options.variables ?? [];
+
+    // Add toc-header if not overridden.
+    if (!variables.some(variable => variable.key === "toc-header")) {
+        variables.push({
+            key: "toc-header",
+            value: "Table of Contents"
+        });
+    }
+
     const args: string[] = [
         "--standalone",
         arg("--verbose", options.verbose),
@@ -258,10 +260,11 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         arg("--template", templateFile),
         arg("--include-before-body", workingPath(options.headerFile)),
         arg("--include-after-body", workingPath(options.footerFile)),
-        ...expand(options.cssFile).map(cssFile => arg("--css", cssFile)),
+        ...variables.map(variable => arg("--variable", variable.value !== undefined ? `${variable.key}:${variable.value}` : variable.key)),
+        ...(options.cssFiles ?? []).map(cssFile => arg("--css", cssFile)),
         arg("--output", path.resolve(outputDirectory, options.outputFile)),
         ...(options.additionalOptions ?? []).map(additionalOption => arg(additionalOption.option, additionalOption.value)),
-        ...expand(options.inputFile)
+        ...options.inputFiles
     ].filter(arg => arg !== "");
 
     if (options.debug ?? false) {
@@ -375,12 +378,14 @@ function runPandoc(args: readonly string[], inputDirectory: string, outputDirect
     }
 
     if (status === 0 && outputDirectory !== inputDirectory) {
-        // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
-        copyFiles(expand(options.cssFile).filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), outputDirectory);
+        if (options.cssFiles !== undefined) {
+            // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
+            copyFiles(options.cssFiles.filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), outputDirectory);
+        }
 
         // Copy resource files if defined.
-        if (options.resourceFile !== undefined) {
-            copyFiles(options.resourceFile, outputDirectory);
+        if (options.resourceFiles !== undefined) {
+            copyFiles(options.resourceFiles, outputDirectory);
         }
     }
 

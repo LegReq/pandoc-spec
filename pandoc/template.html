@@ -81,7 +81,9 @@
             $if(toc)$
             <!-- Table of contents will move to the top below small screen. -->
             <div id="toc" class="col-sm-3 mh-100 overflow-auto d-print-none">
-                <header><span>Table of Contents</span></header>
+                $if(toc-header)$
+                <header><span>$toc-header$</span></header>
+                $endif$
                 $toc$
             </div>
             $endif$
