@@ -86,10 +86,8 @@ export class PuppeteerConfigurator {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Puppeteer configuration format is known.
         const configuration: Configuration = JSON.parse(this._configurationFileContent);
 
-        // Check for existence of args attribute.
-        if (configuration.args === undefined) {
-            configuration.args = [];
-        }
+        // Force existence of args attribute.
+        configuration.args ??= [];
 
         // --no-sandbox is required in GitHub Actions due to issues in Ubuntu (https://github.com/puppeteer/puppeteer/issues/12818).
         const noSandboxArg = "--no-sandbox";

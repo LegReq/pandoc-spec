@@ -23,6 +23,13 @@ import * as path from "node:path";
 import { copyFiles, modulePath, workingPath } from "./file.js";
 import { PuppeteerConfigurator } from "./puppeteer.js";
 
+const MINUTES_PER_HOUR = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+
+const ISO_DATE_LENGTH = 10;
+
+const DEFAULT_WATCH_WAIT_MILLISECONDS = 2000;
+
 /**
  * Filter.
  */
@@ -226,7 +233,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     }
 
     const now = new Date();
-    const adjustedNow = new Date(now.getTime() - now.getTimezoneOffset() * 60 * 1000);
+    const adjustedNow = new Date(now.getTime() - now.getTimezoneOffset() * MINUTES_PER_HOUR * MILLISECONDS_PER_SECOND);
 
     const inputDirectory = options.inputDirectory !== undefined ? path.resolve(options.inputDirectory) : process.cwd();
     const outputDirectory = options.outputDirectory !== undefined ? path.resolve(options.outputDirectory) : process.cwd();
@@ -246,7 +253,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     const args: string[] = [
         "--standalone",
         arg("--verbose", options.verbose),
-        arg("--metadata", options.autoDate ?? false ? `date:${adjustedNow.toISOString().substring(0, 10)}` : undefined),
+        arg("--metadata", options.autoDate ?? false ? `date:${adjustedNow.toISOString().substring(0, ISO_DATE_LENGTH)}` : undefined),
         arg("--from", options.inputFormat, "markdown"),
         arg("--to", options.outputFormat, "html"),
         arg("--shift-heading-level-by", options.shiftHeadingLevelBy, -1),
@@ -298,7 +305,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
         console.error("Watching for changes...");
 
-        const watchWait = options.watchWait ?? 2000;
+        const watchWait = options.watchWait ?? DEFAULT_WATCH_WAIT_MILLISECONDS;
 
         let timeout: NodeJS.Timeout | undefined = undefined;
 
