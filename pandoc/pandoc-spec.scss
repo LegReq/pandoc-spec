@@ -1,0 +1,71 @@
+@use "sass:map";
+
+@use "bootstrap/scss/bootstrap";
+
+// Breakpoint name at which table of contents appears beside the document.
+$toc-breakpoint-size: sm !default;
+
+// Breakpoint at which table of contents appears beside the document.
+$toc-breakpoint: map.get(bootstrap.$grid-breakpoints, $toc-breakpoint-size) !default;
+
+// Container is a column with multiple rows.
+.container {
+  @extend .col;
+  @extend .d-flex;
+  @extend .flex-column;
+  @extend .overflow-hidden;
+
+  // max-width is set within Bootstrap; unset it.
+  max-width: unset;
+}
+
+// Header, body, and footer are rows within container.
+.header, .body, .footer {
+  @extend .row;
+}
+
+// Body takes up entire container less space for header and footer.
+.body {
+  @extend .flex-fill;
+}
+
+// Table of contents takes 25% of the space above the breakpoint and is not printable.
+.toc {
+  @extend .col-#{$toc-breakpoint-size}-3;
+  @extend .d-print-none;
+}
+
+// Content takes up remainder of the space.
+.content {
+  @extend .col;
+}
+
+@media screen {
+  // Container is limited to viewport width and height.
+  .container {
+    width: 100vw;
+    height: 100vh;
+  }
+}
+
+// Up to breakpoint.
+@media screen and (max-width: calc($toc-breakpoint - 1px)) {
+  // Enable overflow on body.
+  .body {
+    overflow: auto !important;
+  }
+}
+
+// Above breakpoint.
+@media screen and (min-width: $toc-breakpoint) {
+  // Disable overflow on body.
+  .body {
+    overflow: hidden !important;
+  }
+
+  // Limit height and enable overflow on table of contents and content.
+  .toc, .content {
+    max-height: 100% !important;
+    overflow: auto !important;
+  }
+}

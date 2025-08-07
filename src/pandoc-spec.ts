@@ -240,6 +240,15 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
     const templateFile = workingPath(options.templateFile ?? (options.outputFormat === undefined || options.outputFormat === "html" ? modulePath("../pandoc/template.html") : undefined));
 
+    // CSS files don't apply if output format is not HTML.
+    const cssFiles = options.cssFiles ?? [];
+
+    // Add core CSS and map files as resource files only if output format is HTML.
+    const coreCSSFiles = options.outputFormat === undefined || options.outputFormat === "html" ? [workingPath(modulePath("../pandoc/pandoc-spec.css")), workingPath(modulePath("../pandoc/pandoc-spec.css.map"))] : [];
+
+    // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
+    const inputResourceFiles = [...cssFiles.filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), ...coreCSSFiles, ...(options.resourceFiles ?? [])];
+
     const variables = options.variables ?? [];
 
     // Add toc-header if not overridden.
@@ -268,7 +277,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         arg("--include-before-body", workingPath(options.headerFile)),
         arg("--include-after-body", workingPath(options.footerFile)),
         ...variables.map(variable => arg("--variable", variable.value !== undefined ? `${variable.key}:${variable.value}` : variable.key)),
-        ...(options.cssFiles ?? []).map(cssFile => arg("--css", cssFile)),
+        ...cssFiles.map(cssFile => arg("--css", cssFile)),
         arg("--output", path.resolve(outputDirectory, options.outputFile)),
         ...(options.additionalOptions ?? []).map(additionalOption => arg(additionalOption.option, additionalOption.value)),
         ...options.inputFiles
@@ -299,7 +308,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     process.chdir(inputDirectory);
 
     // Pandoc must run successfully the first time.
-    const status = runPandoc(args, inputDirectory, outputDirectory, options);
+    const status = runPandoc(args, inputDirectory, outputDirectory, inputResourceFiles);
 
     // Ignore watch if running inside a GitHub Action.
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
@@ -319,7 +328,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         }).on("all", () => {
             if (timeout === undefined) {
                 timeout = setTimeout(() => {
-                    runPandoc(args, inputDirectory, outputDirectory, options);
+                    runPandoc(args, inputDirectory, outputDirectory, inputResourceFiles);
                 }, watchWait);
             } else {
                 // Run Pandoc only after timeout after last event. If not running, this will reactivate it.
@@ -344,13 +353,13 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
  * @param outputDirectory
  * Output directory.
  *
- * @param options
- * Options.
+ * @param inputResourceFiles
+ * Input resource files to copy to output directory.
  *
  * @returns
  * Pandoc exit code.
  */
-function runPandoc(args: readonly string[], inputDirectory: string, outputDirectory: string, options: Options): number {
+function runPandoc(args: readonly string[], inputDirectory: string, outputDirectory: string, inputResourceFiles: string[]): number {
     const puppeteerConfigurator = new PuppeteerConfigurator(inputDirectory);
 
     let status = 0;
@@ -385,15 +394,7 @@ function runPandoc(args: readonly string[], inputDirectory: string, outputDirect
     }
 
     if (status === 0 && outputDirectory !== inputDirectory) {
-        if (options.cssFiles !== undefined) {
-            // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
-            copyFiles(options.cssFiles.filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), outputDirectory);
-        }
-
-        // Copy resource files if defined.
-        if (options.resourceFiles !== undefined) {
-            copyFiles(options.resourceFiles, outputDirectory);
-        }
+        copyFiles(inputResourceFiles, outputDirectory);
     }
 
     // Return Pandoc status.

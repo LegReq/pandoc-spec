@@ -24,20 +24,24 @@
   ],
   "scripts": {
     "lint": "eslint .",
-    "build-dist": "tsup src/index.ts --format esm --dts --minify",
+    "sass": "sass --load-path=node_modules --quiet-deps --style=compressed pandoc/pandoc-spec.scss pandoc/pandoc-spec.css",
+    "sass-watch": "sass --watch --load-path=node_modules --quiet-deps pandoc/pandoc-spec.scss pandoc/pandoc-spec.css",
+    "build-dist": "npm run sass && tsup src/index.ts --format esm --dts --minify",
     "pandoc-spec-local": "tsx bin/pandoc-spec-local $*"
   },
   "bin": {
     "pandoc-spec": "bin/pandoc-spec"
   },
   "devDependencies": {
-    "@legreq/tsdev": "beta"
+    "@legreq/tsdev": "beta",
+    "bootstrap": "^5.3.7",
+    "sass": "^1.90.0"
   },
   "dependencies": {
     "@legreq/pandoc-defref": "beta",
     "chokidar": "^4.0.3",
     "decamelize": "^6.0.0",
-    "glob": "^11.0.1",
+    "glob": "^11.0.3",
     "meow": "^13.2.0",
     "mermaid-filter": "^1.4.7"
   }

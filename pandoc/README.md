@@ -6,5 +6,7 @@ The files contained in this directory are:
 * include-code-files.lua
   * Lua filter from the [Pandoc Lua filters repository](https://github.com/pandoc/lua-filters).
   * Allows specifications written in Markdown to externalize code files (C, JavaScript, JSON, XML, etc.) as a way of modularizing a specification.
+* pandoc-spec.scss
+  * The default CSS file to manage layout and basic styling.
 * template.html
   * The default output template, built on Bootstrap with the CSS flexbox framework. 
