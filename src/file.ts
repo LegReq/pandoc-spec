@@ -69,7 +69,7 @@ export function workingPath(relativePath: string | undefined): string | undefine
 export function copyFiles(patterns: string[], toDirectory: string): void {
     // Source files are expected to be relative to current directory.
     for (const sourceFile of globIterateSync(patterns)) {
-        const destinationFile = path.resolve(toDirectory, sourceFile);
+        const destinationFile = path.resolve(toDirectory, path.isAbsolute(sourceFile) ? path.basename(sourceFile) : sourceFile);
 
         if (destinationFile === path.resolve(sourceFile)) {
             throw new Error(`File ${sourceFile} cannot be copied to itself.`);
