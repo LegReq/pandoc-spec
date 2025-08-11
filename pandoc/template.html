@@ -46,29 +46,29 @@
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
+    <div class="container$container-style$">
+        <div class="header$header-style$">
             $for(include-before)$
             $include-before$
             $endfor$
         </div>
 
-        <div class="body">
+        <div class="body$body-style$">
             $if(toc)$
-            <!-- Table of contents will move to the top below small screen. -->
-            <div class="toc">
+            <!-- Table of contents will move to the top below breakpoint. -->
+            <div class="toc$toc-style$">
                 $if(toc-header)$
                 <header><span class="toc-header">$toc-header$</span></header>
                 $endif$
                 $toc$
             </div>
             $endif$
-            <main class="content">
+            <main class="content$content-style$">
                 $body$
             </main>
         </div>
 
-        <div class="footer">
+        <div class="footer$footer-style$">
             $for(include-after)$
             $include-after$
             $endfor$

@@ -31,6 +31,19 @@ const ISO_DATE_LENGTH = 10;
 const DEFAULT_WATCH_WAIT_MILLISECONDS = 2000;
 
 /**
+ * Determine if value is a non-null object.
+ *
+ * @param value
+ * Value.
+ *
+ * @returns
+ * True if value is a non-null object.
+ */
+function isNonNullObject(value: unknown): value is NonNullable<object> {
+    return typeof value === "object" && value !== null;
+}
+
+/**
  * Filter.
  */
 export interface Filter {
@@ -46,6 +59,15 @@ export interface Variable {
     key: string;
 
     value?: string;
+}
+
+/**
+ * Style.
+ */
+export interface Style {
+    name: string;
+
+    className: string;
 }
 
 /**
@@ -89,6 +111,8 @@ export interface Options {
 
     variables?: Variable[];
 
+    styles?: Style[];
+
     inputDirectory?: string;
 
     inputFiles: string[];
@@ -113,19 +137,6 @@ export interface Options {
 }
 
 /**
- * Determine if value is a non-null object.
- *
- * @param value
- * Value.
- *
- * @returns
- * True if value is a non-null object.
- */
-function isNonNullObject(value: unknown): value is NonNullable<object> {
-    return typeof value === "object" && value !== null;
-}
-
-/**
  * Determine if value satisfies Options type.
  *
  * @param value
@@ -136,6 +147,71 @@ function isNonNullObject(value: unknown): value is NonNullable<object> {
  */
 function isOptions(value: NonNullable<object>): value is Options {
     return "inputFiles" in value && "outputFile" in value;
+}
+
+/**
+ * Merge file and parameter options.
+ *
+ * @param fileOptions
+ * File options.
+ *
+ * @param parameterOptions
+ * Parameter options.
+ *
+ * @returns
+ * Merged options.
+ */
+function mergeOptions(fileOptions: Partial<Options>, parameterOptions: Partial<Options> | undefined): Options {
+    const options: Record<string, unknown> = {
+        ...fileOptions
+    };
+
+    if (parameterOptions !== undefined) {
+        // Parameter options override file options.
+        for (const [key, value] of Object.entries(parameterOptions)) {
+            if (!Object.hasOwn(options, key)) {
+                options[key] = value;
+            } else {
+                const existingValue = options[key];
+
+                if (!Array.isArray(value)) {
+                    if (Array.isArray(existingValue)) {
+                        throw new Error("Invalid options from file and/or parameter");
+                    }
+
+                    options[key] = value;
+                } else {
+                    if (!Array.isArray(existingValue)) {
+                        throw new Error("Invalid options from file and/or parameter");
+                    }
+
+                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Existing value is array of unknowns.
+                    options[key] = [...existingValue, ...value];
+                }
+            }
+        }
+    }
+
+    // Make sure that result meets the minimum requirements.
+    if (!isOptions(options)) {
+        throw new Error("Invalid options from file and/or parameter");
+    }
+
+    // Remove duplicate variables.
+    if (options.variables !== undefined) {
+        const variables = options.variables;
+
+        options.variables = variables.filter((variable1, index1) => variables.find((variable2, index2) => index2 > index1 && variable2.key === variable1.key) === undefined);
+    }
+
+    // Remove duplicate styles.
+    if (options.styles !== undefined) {
+        const styles = options.styles;
+
+        options.styles = styles.filter((style1, index1) => styles.find((style2, index2) => index2 > index1 && style2.name === style1.name) === undefined);
+    }
+
+    return options;
 }
 
 /**
@@ -220,12 +296,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     }
 
     // Build options from file options, overridden by parameter options.
-    const options = parameterOptions === undefined ?
-        fileOptions :
-        {
-            ...fileOptions,
-            ...parameterOptions
-        };
+    const options = mergeOptions(fileOptions, parameterOptions);
 
     // Make sure that result meets the minimum requirements.
     if (!isOptions(options)) {
@@ -243,13 +314,17 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     // CSS files don't apply if output format is not HTML.
     const cssFiles = options.cssFiles ?? [];
 
-    // Add core CSS and map files as resource files only if output format is HTML.
-    const coreCSSFiles = options.outputFormat === undefined || options.outputFormat === "html" ? [workingPath(modulePath("../pandoc/pandoc-spec.css")), workingPath(modulePath("../pandoc/pandoc-spec.css.map"))] : [];
+    // Add core SCSS, CSS, and map files as resource files only if output format is HTML.
+    const coreCSSFiles = options.outputFormat === undefined || options.outputFormat === "html" ? [workingPath(modulePath("../pandoc/pandoc-spec.scss")), workingPath(modulePath("../pandoc/pandoc-spec.css")), workingPath(modulePath("../pandoc/pandoc-spec.css.map"))] : [];
 
     // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
     const inputResourceFiles = [...cssFiles.filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), ...coreCSSFiles, ...(options.resourceFiles ?? [])];
 
-    const variables = options.variables ?? [];
+    // Styles are handled as variables with a "-style" suffix in the key and leading space in the value.
+    const variables = [...(options.variables ?? []), ...(options.styles ?? []).map(style => ({
+        key: `${style.name}-style`,
+        value: ` ${style.className}`
+    }))];
 
     // Add toc-header if not overridden.
     if (!variables.some(variable => variable.key === "toc-header")) {

@@ -16,7 +16,14 @@
 
 import decamelize from "decamelize";
 import meow, { type Flag, type FlagType } from "meow";
-import { type AdditionalOption, type Filter, type Options, pandocSpec, type Variable } from "./pandoc-spec.js";
+import {
+    type AdditionalOption,
+    type Filter,
+    type Options,
+    pandocSpec,
+    type Variable,
+    type Style
+} from "./pandoc-spec.js";
 
 /**
  * Extended CLI flag.
@@ -139,7 +146,7 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         type: "string",
         isMultiple: true,
         cliName: "variable",
-        description: "Variable of the format key[:value] to be passed to Pandoc. If no value is specified, defaults to \"true\".",
+        description: "Variable of the format key[:value] to be passed to the template file. If no value is specified, defaults to \"true\".",
         parseMapper: (components) => {
             let variable: Variable;
 
@@ -163,6 +170,30 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
             }
 
             return variable;
+        }
+    },
+    styles: {
+        type: "string",
+        isMultiple: true,
+        cliName: "style",
+        description: "Style of the format key:value to be added to the \"class\" attribute of component in the template file with the matching class.",
+        parseMapper: (components) => {
+            let style: Style;
+
+            switch (components.length) {
+                case 2:
+                    style = {
+                        name: components[0],
+                        className: components[1]
+                    };
+                    break;
+
+                default: {
+                    throw new Error(`Invalid style: ${components.join(":")}`);
+                }
+            }
+
+            return style;
         }
     },
     inputDirectory: {
