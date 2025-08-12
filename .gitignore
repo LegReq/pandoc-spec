@@ -1,8 +1,6 @@
 /package-lock.json
 /dist/
 /node_modules/
-/pandoc-spec.options.json
-/header.html
-/footer.html
 /pandoc/pandoc-spec.css
 /pandoc/pandoc-spec.css.map
+/test/_site/

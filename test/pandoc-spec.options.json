@@ -1,0 +1,30 @@
+{
+  "debug": true,
+  "verbose": true,
+  "autoDate": true,
+  "headerFile": "test/header.html",
+  "footerFile": "test/footer.html",
+  "styles": [
+    {
+      "name": "header",
+      "className": "whoever"
+    },
+    {
+      "name": "footer",
+      "className": "whichever"
+    }
+  ],
+  "inputDirectory": "test",
+  "inputFiles": [
+    "Index.md",
+    "Overview.md",
+    "Specification.md",
+    "Next-Steps.md"
+  ],
+  "cssFiles": [
+    "index.css"
+  ],
+  "outputDirectory": "test/_site",
+  "cleanOutput": true,
+  "outputFile": "index.html"
+}
