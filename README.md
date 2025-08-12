@@ -1,12 +1,8 @@
 # Pandoc Specification Builder
 
-This is a [Pandoc](https://pandoc.org/) utility that simplifies the building of technical specifications using Pandoc.
-Although not definitive, it provides sensible defaults and the ability to generate repeatable results through a
-configuration file rather than command-line parameters. Any Pandoc options not available through the predefined
-configuration properties may be specified through the `additionalOptions` property of the configuration file.
+This is a [Pandoc](https://pandoc.org/) utility that simplifies the building of technical specifications using Pandoc. Although not definitive, it provides sensible defaults and the ability to generate repeatable results through a configuration file rather than command-line parameters. Any Pandoc options not available through the predefined configuration properties may be specified through the `additionalOptions` property of the configuration file.
 
-In addition, there is a GitHub Action available to automate building the specification, with the option to publish it to
-GitHub Pages.
+In addition, there is a GitHub Action available to automate building the specification, with the option to publish it to GitHub Pages.
 
 ## Pre-defined Filters
 
@@ -18,17 +14,68 @@ Four filters are pre-defined and always available:
   * Incorporated directly into this package, but unlikely to be updated at source.
 * include-code-files
   * Lua filter from the [Pandoc Lua filters repository](https://github.com/pandoc/lua-filters).
-  * Allows specifications written in Markdown to externalize code files (C, JavaScript, JSON, XML, etc.) as a way of
-    modularizing a specification.
+  * Allows specifications written in Markdown to externalize code files (C, JavaScript, JSON, XML, etc.) as a way of modularizing a specification.
   * Incorporated directly into this package, but unlikely to be updated at source.
 * pandoc-defref
   * [Pandoc definition reference filter](https://www.npmjs.com/package/@legreq/pandoc-defref)
-  * Included as a dependency, so users of this package don't have to rely on this package being updated to get the
-    latest version.
+  * Included as a dependency, so users of this package don't have to rely on this package being updated to get the latest version.
 * mermaid-filter
   * [Mermaid filter](https://www.npmjs.com/package/mermaid-filter)
-  * Included as a dependency, so users of this package don't have to rely on this package being updated to get the
-    latest version.
+  * Included as a dependency, so users of this package don't have to rely on this package being updated to get the latest version.
+
+## Styling
+
+### Layout
+
+The layout of the default template is as follows:
+
+```text
+| container       |
+| | header      | |
+| | body        | |
+| | | toc     | | |
+| | | content | | |
+| | footer      | |
+```
+
+The default template has class names applied to each of its major elements:
+
+* container - The `<div>` element inside the `<body>` element that contains all the other elements.
+* header - The `<div>` element for the header as defined in the configuration.
+* body - The `<div>` element for the body of document.
+* toc - The `<div>` element for the table of contents.
+* content - The `<div>` element for the document content.
+* footer - The `<div>` element for the footer as defined in the configuration.
+
+Additional styling may be applied to these elements using the `styles` property of the configuration.
+
+### Numbering
+
+Counters have been defined for example and figure numbering. They are automatically reset when the "content" class name is encountered.
+
+Counters may be applied using Pandoc's extended Markdown as follows:
+
+````markdown
+[[Example]{.example-number-after} - A TypeScript example]{.example-caption}
+
+```typescript {#a-typescript-example}
+// Some example code here.
+```
+````
+
+The breakdown is as follows:
+
+* An outer block (implemented as `<span>` by Pandoc) with the class name "example-caption".
+* An inner block (implemented as `<span>` by Pandoc) with the class name "example-number-after". The block's last element is set to a space followed by the next example number.
+
+The following classes are available for example numbering:
+
+* example-counter-reset - Resets the example counter.
+* example-number-after - Places the example number after the block.
+* example-number-before - Places the example number before the block.
+* example-caption - Basic styling for example captions.
+
+Equivalent classes are available for figures.
 
 ## Configuration
 
@@ -94,15 +141,11 @@ The Pandoc Specification Builder looks for the file `pandoc-spec.options.json` i
 
 ## Running the Builder
 
-There are three ways to run the Pandoc Specification Builder: from code, from the command line, or as a GitHub Action.
-In all cases, the options are built from two sources: the options file (if present) and the options object passed as a
-parameter. The options file defaults to `pandoc-spec.options.json` in the starting directory, but this may be overridden
-by setting the `optionsFile` property in the options object passed as a parameter.
+There are three ways to run the Pandoc Specification Builder: from code, from the command line, or as a GitHub Action. In all cases, the options are built from two sources: the options file (if present) and the options object passed as a parameter. The options file defaults to `pandoc-spec.options.json` in the starting directory, but this may be overridden by setting the `optionsFile` property in the options object passed as a parameter.
 
 ### Code
 
-The code option allows options specified in the options file to be overridden. This example enables debugging and 
-verbosity and leaves the rest to `pandoc-spec.options.json`.
+The code option allows options specified in the options file to be overridden. This example enables debugging and verbosity and leaves the rest to `pandoc-spec.options.json`.
 
 ```typescript
 import { type Options, pandocSpec } from "@legreq/pandoc-spec";
@@ -154,9 +197,7 @@ Note the following:
 
 ### GitHub Action
 
-The GitHub Action runs within a workflow. If `package.json` exists and the script `pandoc-spec-action` is defined within
-it, the Pandoc Specification Builder will be called via `npm run pandoc-spec-action`; otherwise, it will be called via
-`pandoc-spec`.
+The GitHub Action runs within a workflow. If `package.json` exists and the script `pandoc-spec-action` is defined within it, the Pandoc Specification Builder will be called via `npm run pandoc-spec-action`; otherwise, it will be called via `pandoc-spec`.
 
 The GitHub Action is available at `legreq/pandoc-spec@v1` and defines the following input parameters:
 
@@ -167,11 +208,9 @@ The GitHub Action is available at `legreq/pandoc-spec@v1` and defines the follow
 * `include-pages`
   * If true, includes publication to GitHub Pages. Default is false. 
 * `pages-path`
-  * Path of the output directory containing the GitHub Pages content; ignored if `include-pages` is false. Default is
-    "_site/".
+  * Path of the output directory containing the GitHub Pages content; ignored if `include-pages` is false. Default is "_site/".
 
-The following workflow, when installed in .github/workflows, will be triggered on any push to the `main` branch. It will
-set up node, check out the repository, run `npm install`, build the specification, and publish it to GitHub Pages.
+The following workflow, when installed in .github/workflows, will be triggered on any push to the `main` branch. It will set up node, check out the repository, run `npm install`, build the specification, and publish it to GitHub Pages.
 
 ```yaml
 name: Push to main

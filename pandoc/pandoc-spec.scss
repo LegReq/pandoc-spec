@@ -69,3 +69,81 @@ $toc-breakpoint: map.get(bootstrap.$grid-breakpoints, $toc-breakpoint-size) !def
     overflow: auto !important;
   }
 }
+
+// Reset example counter.
+.example-counter-reset {
+  counter-reset: example-counter;
+}
+
+// Reset figure counter.
+.figure-counter-reset {
+  counter-reset: figure-counter;
+}
+
+// Counters are reset when content is generated.
+.content {
+  @extend .example-counter-reset;
+  @extend .figure-counter-reset;
+}
+
+// Increment example counter.
+.example-number {
+  counter-increment: example-counter 1;
+  font-weight: bold;
+}
+
+// Example number after.
+.example-number-after {
+  @extend .example-number;
+}
+
+// Apply example number after.
+.example-number-after::after {
+  content: " " counter(example-counter);
+}
+
+// Example number before.
+.example-number-before {
+  @extend .example-number;
+}
+
+// Apply example number before.
+.example-number-before::before {
+  content: counter(example-counter) ". ";
+}
+
+// Example caption.
+.example-caption {
+  font-style: italic;
+}
+
+// Increment figure counter.
+.figure-number {
+  counter-increment: figure-counter 1;
+  font-weight: bold;
+}
+
+// Example number after.
+.figure-number-after {
+  @extend .figure-number;
+}
+
+// Apply figure number after.
+.figure-number-after::after {
+  content: " " counter(figure-counter);
+}
+
+// Example number before.
+.figure-number-before {
+  @extend .figure-number;
+}
+
+// Apply figure number before.
+.figure-number-before::before {
+  content: counter(figure-counter) ". ";
+}
+
+// Example caption.
+.figure-caption {
+  font-style: italic;
+}
