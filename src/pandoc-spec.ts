@@ -389,6 +389,14 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
         console.error("Watching for changes...");
 
+        // Ignore Puppeteer configuration file and Mermaid filter error file.
+        const ignored = [".puppeteer.json", "mermaid-filter.err"];
+
+        // Ignore output directory if it's a subdirectory of the input directory.
+        if (outputDirectory.startsWith(`${inputDirectory}/`)) {
+            ignored.push(outputDirectory.substring(inputDirectory.length + 1));
+        }
+
         const watchWait = options.watchWait ?? DEFAULT_WATCH_WAIT_MILLISECONDS;
 
         let timeout: NodeJS.Timeout | undefined = undefined;
@@ -396,11 +404,14 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         // Watch current (input) directory and optionally the template file.
         chokidar.watch(options.watchTemplateFile !== true || templateFile === undefined ? "." : [".", templateFile], {
             ignoreInitial: true,
+            ignored,
             awaitWriteFinish: {
                 stabilityThreshold: watchWait,
                 pollInterval: 100
             }
-        }).on("all", () => {
+        }).on("all", (eventName, path) => {
+            console.log(`${eventName}:${path}`);
+
             if (timeout === undefined) {
                 timeout = setTimeout(() => {
                     runPandoc(args, inputDirectory, outputDirectory, inputResourceFiles);
