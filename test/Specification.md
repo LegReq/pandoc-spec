@@ -24,9 +24,9 @@ A harum officiis ut quaerat labore sed voluptatem facilis ut doloremque delectus
 
 Ut atque assumenda est laboriosam modi qui internos voluptatum vel dignissimos magnam ut nemo dolorum non quod fugit At possimus quibusdam. Vel autem voluptas et illo autem aut repellendus veritatis. Ut omnis sunt qui iste assumenda sit modi dolorem. Eos aspernatur necessitatibus qui deserunt provident aut earum possimus ut quam sunt aut minima quia sed libero sunt?
 
-[[Figure]{.figure-number-before} - A Mermaid example]{.figure-caption}
+[[Figure]{.figure-number-before} - A Mermaid figure]{.figure-caption}
 
-```mermaid {#mermaid-figure}
+```mermaid {#a-mermaid-figure}
 sequenceDiagram
     participant web as Web Browser
     participant blog as Blog Service
@@ -65,7 +65,7 @@ Et explicabo esse et quas culpa a pariatur ullam. Et magnam recusandae vel quod 
 
 [[Example]{.example-number-after} - A TypeScript example]{.example-caption}
 
-```typescript {#typescript-example}
+```typescript {#a-typescript-example}
 /**
  * Copy files matching glob patterns to a directory.
  *
@@ -97,19 +97,37 @@ export function copyFiles(patterns: string[], toDirectory: string): void {
     }
 }
 ```
+
 Nam deserunt veritatis ab quas doloribus et incidunt quas nam mollitia labore eos autem iste aut voluptatem sunt. Quo necessitatibus maxime sit provident modi in voluptas quasi aut internos dignissimos. Qui molestiae nulla aut amet quos et tempore odio. Eum vero ullam id sequi dolorem 33 illum sint et velit obcaecati qui consequatur iste ea harum perferendis 33 dolorem laborum.
 
 Qui atque maxime ex error deserunt a sint reprehenderit. 33 deserunt repellat aut quisquam nisi ad autem quos. Ut doloribus incidunt in voluptates sequi quo modi dolor.
 
 Sit autem eius ex atque voluptate in rerum sint est saepe distinctio et galisum unde. Et iure mollitia et officia minima et velit omnis sit porro harum. Et dignissimos ipsa non praesentium recusandae qui galisum voluptates? Quo aperiam dolorem cum deleniti consequuntur est eveniet soluta aut consequuntur voluptas ex inventore enim aut excepturi suscipit.
 
-Et [voluptatibus nemo](#mermaid-figure) et [voluptatem repudiandae](#typescript-example) est veniam minus. Ut corrupti neque eos tempore iste eos commodi quia.
+Et [voluptatibus nemo](#a-mermaid-figure) et [voluptatem repudiandae](#a-typescript-example) est veniam minus. Ut corrupti neque eos tempore iste eos commodi quia.
 
 ### Outputs
 
 Sit blanditiis fugiat in libero quaerat aut minus inventore qui velit reprehenderit. Quo dolorem minus ea nulla necessitatibus ea aliquam neque eos delectus odio sed aspernatur omnis et autem ratione aut vitae omnis. Sit quia consequatur est eligendi sint eos ullam recusandae ut corporis quisquam sed deleniti omnis aut minus modi.
 
 Qui error fugiat At quidem obcaecati est rerum beatae. Aut facilis internos ut porro animi aut dolores sint eum fuga placeat qui sint deleniti ex dolorem laudantium aut cumque adipisci.
+
+[[Example]{.example-number-after} - Another TypeScript example]{.example-caption}
+
+```typescript {#another-typescript-example}
+/**
+ * Get the module path of path relative to the module root.
+ *
+ * @param relativePath
+ * Path relative to the module root.
+ *
+ * @returns
+ * Module path.
+ */
+export function modulePath(relativePath: string): string {
+    return decodeURI(new URL(relativePath, import.meta.url).pathname);
+}
+```
 
 Hic mollitia internos et galisum blanditiis est unde voluptas nam ducimus similique sit fuga iusto! Ut laudantium obcaecati sed facere rerum id neque dolores. Quo excepturi voluptatem a repudiandae ducimus non velit ullam et reiciendis ratione id consequatur dolorum est magnam veritatis aut mollitia totam. Aut voluptates nisi vel Quis necessitatibus ut recusandae minus ad culpa officia At ipsum corrupti.
 

@@ -1,5 +1,5 @@
 {
-  "debug": true,
+  "logLevel": "debug",
   "verbose": true,
   "autoDate": true,
   "headerFile": "test/header.html",

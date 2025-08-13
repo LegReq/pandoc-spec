@@ -26,5 +26,19 @@ Ex dolores deserunt aut molestias maiores id magnam corporis eos eveniet nihil u
 
 Et amet repellat et molestias omnis aut distinctio sint qui unde tempora ut velit architecto et sequi dolorem non atque earum? Sit quae ducimus sed quaerat ipsam in architecto tempore et sint reiciendis et dolor enim et adipisci dolores aut consectetur tenetur.
 
+[[Figure]{.figure-number-before} - Basic interaction]{.figure-caption}
+
+```mermaid {#basic-interaction}
+sequenceDiagram
+    Alice ->> Bob: Hello Bob, how are you?
+    Bob-->>John: How about you John?
+    Bob--x Alice: I am good thanks!
+    Bob-x John: I am good thanks!
+    Note right of John: Bob thinks a long<br/>long time, so long<br/>that the text does<br/>not fit on a row.
+
+    Bob-->Alice: Checking with John...
+    Alice->John: Yes... John, how are you?
+```
+
 Sit itaque enim qui voluptas laborum rem placeat quae non omnis eligendi ut corrupti doloribus. Id aperiam tempore nam quas aperiam qui repudiandae incidunt At rerum praesentium. Aut eaque tempore aut nisi enim et praesentium obcaecati in voluptatibus ratione!
 

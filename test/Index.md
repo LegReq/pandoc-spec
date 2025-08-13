@@ -6,14 +6,23 @@ lang: en
 
 ## Pandoc Test {.unnumbered .unlisted}
 
-### Authors: {.unnumbered .unlisted}
+### Credits: {.unnumbered .unlisted}
+
+[[Table]{.table-number-after} - Authors]{.table-caption}
 
 ::: {.unformattedTable}
-------------- ------------------------ ---------------------------------------------------
-Kevin Dean    <kevin@legreq.com>       [Legendary Requirements](https://legreq.com/)       
-Will Abramson <will@legreq.com>        [Legendary Requirements](https://legreq.com/)
-Joe Andrieu   <joe@legreq.com>         [Legendary Requirements](https://legreq.com/)       
-------------- ------------------------ ---------------------------------------------------
+---------- ------------------ ---------------------------------------------
+Kevin Dean <kevin@legreq.com> [Legendary Requirements](https://legreq.com/)       
+---------- ------------------ ---------------------------------------------
+:::
+
+[[Table]{.table-number-after} - Contributors]{.table-caption}
+
+::: {.unformattedTable}
+------------- ----------------- ---------------------------------------------
+Will Abramson <will@legreq.com> [Legendary Requirements](https://legreq.com/)
+Joe Andrieu   <joe@legreq.com>  [Legendary Requirements](https://legreq.com/)
+------------- ----------------- ---------------------------------------------
 :::
 
 ### Abstract {.unnumbered .unlisted}
