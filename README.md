@@ -153,7 +153,7 @@ The code option allows options specified in the options file to be overridden. T
 import { type Options, pandocSpec } from "@legreq/pandoc-spec";
 
 const options: Partial<Options> = {
-  debug: true,
+  logLevel: "debug",
   verbose: true
 };
 
@@ -181,17 +181,18 @@ Given the following in `pandoc-spec.options.json`:
 The command-line to add the input files and override some of the options could look like this:
 
 ```bash
-pandoc-spec --debug --no-verbose --input-file "Index.md" \
-  --input-file "Introduction.md" --input-file "Use Cases.md" \
-  --input-file "ABNF.md" --input-file "Specification.md" \
-  --input-file "References.md"  --input-file "Appendix.md"
-  --output-directory "test" --watch
+pandoc-spec --log-level debug --no-verbose --input-file Index.md \
+  --input-file Introduction.md --input-file Use Cases.md \
+  --input-file ABNF.md --input-file Specification.md \
+  --input-file References.md  --input-file Appendix.md
+  --style content:theme-content --output-directory "test" --watch
 ```
 
 Note the following:
 
 * All options are in lower-case with hyphen separators and are preceded by two hyphens.
 * Boolean options are enabled by their name, disabled by "no-" followed by their name.
+* Options that take a key-value pair have key and value separated by ':'.
 * Options that take arrays may be repeated, and the resulting arrays will be in the same order as on the command-line.
 * Two additional options are available:
   * "--help" shows the command-line syntax.
