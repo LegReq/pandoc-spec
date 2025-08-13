@@ -66,9 +66,9 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         type: "string",
         description: "Path of options file; default is pandoc-spec.options.json."
     },
-    debug: {
-        type: "boolean",
-        description: "If true, dumps the input and output directory and the Pandoc command-line to stderr prior to execution."
+    logLevel: {
+        type: "string",
+        description: "Log level, one of \"silly\", \"trace\", \"debug\", \"info\" (default), \"warn\", \"error\", or \"fatal\"."
     },
     verbose: {
         type: "boolean",
@@ -249,10 +249,6 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
     watch: {
         type: "boolean",
         description: "If true, the input directory is watched for changes and Pandoc is rerun when detected. Ignored if running inside a GitHub Action."
-    },
-    watchTemplateFile: {
-        type: "boolean",
-        description: "If true, the template file is watched for changes and Pandoc is rerun when detected. Ignored if watch is false."
     },
     watchWait: {
         type: "number",

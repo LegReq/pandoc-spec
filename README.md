@@ -51,7 +51,7 @@ Additional styling may be applied to these elements using the `styles` property 
 
 ### Numbering
 
-Counters have been defined for example and figure numbering. They are automatically reset when the "content" class name is encountered.
+Counters have been defined for example, figure, and table numbering. They are initialized (or reset) when the "content" class name is encountered.
 
 Counters may be applied using Pandoc's extended Markdown as follows:
 
@@ -63,26 +63,29 @@ Counters may be applied using Pandoc's extended Markdown as follows:
 ```
 ````
 
-The breakdown is as follows:
+This is translated to HTML as:
 
 * An outer block (implemented as `<span>` by Pandoc) with the class name "example-caption".
 * An inner block (implemented as `<span>` by Pandoc) with the class name "example-number-after". The block's last element is set to a space followed by the next example number.
+* An example, below the caption, with the anchor "a-typescript-example". This may be referred to like any other anchor (e.g., `See [TypeScript example](#a-typescript-example).`).
+  * Alternately, the anchor may be included in the outer block of the caption, i.e., `{.example-caption #a-typescript-example}`
 
-The following classes are available for example numbering:
+The following classes are available for example numbering and caption formatting:
 
 * example-counter-reset - Resets the example counter.
+* example-number - Used to format the inner block, inherited by "example-number-after" and "example-number-before".
 * example-number-after - Places the example number after the block.
 * example-number-before - Places the example number before the block.
 * example-caption - Basic styling for example captions.
 
-Equivalent classes are available for figures.
+Equivalent classes are available for figures and tables (e.g., "figure-caption", "table-number-before").
 
 ## Configuration
 
 | Attribute             | Type     | Required? | Default                  | Description                                                                                                                                                                                                                                                                                                                              |
 |-----------------------|----------|-----------|--------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `optionsFile`         | string   | false     | pandoc-spec.options.json | Path of options file. Allows the command-line to specify the an options file other than the default.                                                                                                                                                                                                                                     |
-| `debug`               | boolean  | false     | false                    | If true, dumps the input and output directory and the Pandoc command-line to stderr prior to execution.                                                                                                                                                                                                                                  |
+| `logLevel`            | string   | false     | info                     | Log level, one of "silly", "trace", "debug", "info", "warn", "error", or "fatal".                                                                                                                                                                                                                                                        |
 | `verbose`             | boolean  | false     | false                    | If true, passes --verbose to Pandoc for verbose output.                                                                                                                                                                                                                                                                                  |
 | `autoDate`            | boolean  | false     | false                    | If true, adds a `date` value to the metadata in the format YYYY-MM-DD.                                                                                                                                                                                                                                                                   |
 | `inputFormat`         | string   | false     | markdown                 | Input file format.                                                                                                                                                                                                                                                                                                                       |
@@ -113,7 +116,6 @@ Equivalent classes are available for figures.
 | - `option`            | string   | true      |                          | The option to be added to the Pandoc command line.                                                                                                                                                                                                                                                                                       |
 | - `value`             | string   | false     |                          | The value for the option, if any, to be added to the Pandoc command line.                                                                                                                                                                                                                                                                |
 | `watch`               | boolean  | false     |                          | If true, the input directory is watched for changes and Pandoc is rerun when detected. Ignored if running inside a GitHub Action.                                                                                                                                                                                                        |
-| `watchTemplateFile`   | boolean  | false     |                          | If true, the template file is watched for changes and Pandoc is rerun when detected. Ignored if watch is false.                                                                                                                                                                                                                          |
 | `watchWait`           | number   | false     | 2000                     | Time in milliseconds to wait for changes to be fully written before rerunning Pandoc.                                                                                                                                                                                                                                                    |
 
 The Pandoc Specification Builder looks for the file `pandoc-spec.options.json` in the starting directory. If present, this file is expected to be structured according to the above. For example:

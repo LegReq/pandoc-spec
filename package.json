@@ -43,6 +43,7 @@
     "decamelize": "^6.0.0",
     "glob": "^11.0.3",
     "meow": "^13.2.0",
-    "mermaid-filter": "^1.4.7"
+    "mermaid-filter": "^1.4.7",
+    "tslog": "^4.9.3"
   }
 }

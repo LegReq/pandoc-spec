@@ -14,14 +14,13 @@
  * limitations under the License.
  */
 
-/* eslint-disable no-console -- Console application. */
-
 import { spawnSync } from "child_process";
 import chokidar from "chokidar";
 import fs from "fs";
 import * as path from "node:path";
 import { copyFiles, modulePath, workingPath } from "./file.js";
 import { PuppeteerConfigurator } from "./puppeteer.js";
+import { ExtendedLogger, isNonNullObject, LogLevel } from "./utility.js";
 
 const MINUTES_PER_HOUR = 60;
 const MILLISECONDS_PER_SECOND = 1000;
@@ -30,18 +29,7 @@ const ISO_DATE_LENGTH = 10;
 
 const DEFAULT_WATCH_WAIT_MILLISECONDS = 2000;
 
-/**
- * Determine if value is a non-null object.
- *
- * @param value
- * Value.
- *
- * @returns
- * True if value is a non-null object.
- */
-function isNonNullObject(value: unknown): value is NonNullable<object> {
-    return typeof value === "object" && value !== null;
-}
+const logger = new ExtendedLogger("pandoc-spec");
 
 /**
  * Filter.
@@ -85,7 +73,7 @@ export interface AdditionalOption {
 export interface Options {
     optionsFile?: string;
 
-    debug?: boolean;
+    logLevel?: string;
 
     verbose?: boolean;
 
@@ -130,8 +118,6 @@ export interface Options {
     additionalOptions?: AdditionalOption[];
 
     watch?: boolean;
-
-    watchTemplateFile?: boolean;
 
     watchWait?: number;
 }
@@ -275,6 +261,8 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         optionsFileRequired = false;
     }
 
+    optionsFile = path.resolve(optionsFile);
+
     let fileOptions: Partial<Options>;
 
     if (fs.existsSync(optionsFile)) {
@@ -297,6 +285,14 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
     // Build options from file options, overridden by parameter options.
     const options = mergeOptions(fileOptions, parameterOptions);
+
+    logger.logLevel = options.logLevel;
+
+    if (logger.validLogLevel(LogLevel.Trace)) {
+        logger.trace(`Parameter options:\n${JSON.stringify(parameterOptions, null, 2)}`);
+        logger.trace(`File options:\n${JSON.stringify(fileOptions, null, 2)}`);
+        logger.trace(`Consolidated options:\n${JSON.stringify(options, null, 2)}`);
+    }
 
     // Make sure that result meets the minimum requirements.
     if (!isOptions(options)) {
@@ -358,11 +354,11 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         ...options.inputFiles
     ].filter(arg => arg !== "");
 
-    if (options.debug ?? false) {
-        console.error(`Input directory: ${inputDirectory}`);
-        console.error(`Output directory: ${outputDirectory}`);
+    if (logger.validLogLevel(LogLevel.Debug)) {
+        logger.debug(`Input directory: ${inputDirectory}`);
+        logger.debug(`Output directory: ${outputDirectory}`);
 
-        console.error(`Pandoc arguments:\n${args.join("\n")}`);
+        logger.debug(`Pandoc arguments:\n${args.join("\n")}`);
     }
 
     if (options.cleanOutput ?? false) {
@@ -387,13 +383,26 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
     // Ignore watch if running inside a GitHub Action.
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
-        console.error("Watching for changes...");
+        const inputDirectoryStart = `${inputDirectory}/`;
+
+        // Watch current (input) directory and all input resource files.
+        const watchPaths = [".", ...inputResourceFiles];
+
+        // Watch template file if defined.
+        if (templateFile !== undefined) {
+            watchPaths.push(templateFile);
+        }
 
         // Ignore Puppeteer configuration file and Mermaid filter error file.
         const ignored = [".puppeteer.json", "mermaid-filter.err"];
 
+        // Ignore options file if it's in the input directory.
+        if (optionsFile.startsWith(inputDirectoryStart)) {
+            ignored.push(optionsFile.substring(inputDirectory.length + 1));
+        }
+
         // Ignore output directory if it's a subdirectory of the input directory.
-        if (outputDirectory.startsWith(`${inputDirectory}/`)) {
+        if (outputDirectory.startsWith(inputDirectoryStart)) {
             ignored.push(outputDirectory.substring(inputDirectory.length + 1));
         }
 
@@ -401,8 +410,9 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
         let timeout: NodeJS.Timeout | undefined = undefined;
 
-        // Watch current (input) directory and optionally the template file.
-        chokidar.watch(options.watchTemplateFile !== true || templateFile === undefined ? "." : [".", templateFile], {
+        logger.info("Watching for changes...");
+
+        chokidar.watch(watchPaths, {
             ignoreInitial: true,
             ignored,
             awaitWriteFinish: {
@@ -410,11 +420,12 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
                 pollInterval: 100
             }
         }).on("all", (eventName, path) => {
-            console.log(`${eventName}:${path}`);
+            logger.debug(`${eventName}: ${path}`);
 
             if (timeout === undefined) {
                 timeout = setTimeout(() => {
                     runPandoc(args, inputDirectory, outputDirectory, inputResourceFiles);
+                    logger.info("Watching for changes...");
                 }, watchWait);
             } else {
                 // Run Pandoc only after timeout after last event. If not running, this will reactivate it.
@@ -464,7 +475,7 @@ function runPandoc(args: readonly string[], inputDirectory: string, outputDirect
         }
 
         if (spawnResult.status !== 0) {
-            console.error(`Failed with status ${spawnResult.status}`);
+            logger.error(`Failed with status ${spawnResult.status}`);
             status = spawnResult.status;
         }
     } finally {
