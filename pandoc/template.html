@@ -46,29 +46,29 @@
 </head>
 
 <body>
-    <div class="container$container-style$">
-        <div class="header$header-style$">
+    <div id="_container" class="container$container-style$">
+        <div id="_header" class="header$header-style$">
             $for(include-before)$
             $include-before$
             $endfor$
         </div>
 
-        <div class="body$body-style$">
+        <div id="_body" class="body$body-style$">
             $if(toc)$
             <!-- Table of contents will move to the top below breakpoint. -->
-            <div class="toc$toc-style$">
+            <div id="_toc" class="toc$toc-style$">
                 $if(toc-header)$
                 <header><span class="toc-header">$toc-header$</span></header>
                 $endif$
                 $toc$
             </div>
             $endif$
-            <main class="content$content-style$">
+            <main id="_content" class="content$content-style$">
                 $body$
             </main>
         </div>
 
-        <div class="footer$footer-style$">
+        <div id="_footer" class="footer$footer-style$">
             $for(include-after)$
             $include-after$
             $endfor$
@@ -83,9 +83,91 @@
 
 <!-- AnchorJS -->
 <script src="https://cdn.jsdelivr.net/npm/anchor-js/anchor.min.js"></script>
+
 <script>
     // Add anchors to all headings (default excludes h1), except for those with class "no-anchor".
     anchors.add("h1, h2, h3, h4, h5, h6").remove(".no-anchor");
+
+    document.addEventListener("DOMContentLoaded", () => {
+        if ("scrollRestoration" in history) {
+            // Signal that scroll restoration is handled manually.
+            history.scrollRestoration = "manual";
+        }
+
+        // Get all scrollable elements.
+        const bodyElement = document.getElementById("_body");
+        const tocElement = document.getElementById("_toc");
+        const contentElement = document.getElementById("_content");
+
+        function saveScroll() {
+            // Update the state in history with the current scroll positions.
+            history.replaceState({
+                bodyTop: bodyElement.scrollTop,
+                bodyLeft: bodyElement.scrollLeft,
+                tocTop: tocElement.scrollTop,
+                tocLeft: tocElement.scrollLeft,
+                contentTop: contentElement.scrollTop,
+                contentLeft: contentElement.scrollLeft
+            }, "");
+        }
+
+        let timeout = setTimeout(saveScroll, 50);
+
+        function resetTimeout() {
+            clearTimeout(timeout);
+
+            // Give user 50ms to settle scrolling.
+            timeout = setTimeout(saveScroll, 50);
+        }
+
+        // Add scroll listener.
+        bodyElement.addEventListener("scroll", resetTimeout);
+        tocElement.addEventListener("scroll", resetTimeout);
+        contentElement.addEventListener("scroll", resetTimeout);
+
+        addEventListener("popstate", (e) => {
+            const state = e.state;
+
+            // Restore scroll positions if state object is the right type.
+            if (typeof state === "object" && state !== null && "bodyTop" in state && "bodyLeft" in state && "tocTop" in state && "tocLeft" in state && "contentTop" in state && "contentLeft" in state) {
+                bodyElement.scrollTo({
+                    top: state.bodyTop,
+                    left: state.bodyLeft
+                });
+
+                tocElement.scrollTo({
+                    top: state.tocTop,
+                    left: state.tocLeft
+                });
+
+                contentElement.scrollTo({
+                    top: state.contentTop,
+                    left: state.contentLeft
+                });
+            }
+        });
+
+        const location = self.location;
+
+        // Override click behaviour for internal links.
+        for (const link of document.getElementsByTagName("a")) {
+            if (link.hash !== "" && link.origin === location.origin && link.pathname === location.pathname) {
+                const targetElement = document.getElementById(link.hash.substring(1));
+                const target = `$${location.origin}$${location.pathname}$${location.search}#$${targetElement.id}`;
+
+                link.addEventListener("click", (e) => {
+                    // Add target to history.
+                    history.pushState(null, "", target);
+
+                    resetTimeout();
+
+                    // Bring the target element into view and prevent default click behaviour.
+                    targetElement.scrollIntoView(true);
+                    e.preventDefault();
+                });
+            }
+        }
+    });
 </script>
 
 </body>
