@@ -90,10 +90,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@lemonadejs/tabs/dist/style.min.css" />
 
 <script>
-    // Add anchors to all headings (default excludes h1), except for those with class "no-anchor".
-    anchors.add("h1, h2, h3, h4, h5, h6").remove(".no-anchor");
-
     document.addEventListener("DOMContentLoaded", () => {
+        // Add anchors to all headings (default excludes h1), except for those with class "unlisted".
+        anchors.add("h1, h2, h3, h4, h5, h6").remove(".unlisted");
+
         if ("scrollRestoration" in history) {
             // Signal that scroll restoration is handled manually.
             history.scrollRestoration = "manual";
