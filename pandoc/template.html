@@ -222,7 +222,6 @@
                                 [...siblingHeadingElement.attributes].forEach(({name, value}) => {
                                     // Class attribute is handled separately.
                                     if (name !== "class") {
-                                        console.log(`Setting ${name} = ${value}`);
                                         tabElement.setAttribute(name, value);
                                     }
                                 });
