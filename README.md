@@ -23,7 +23,7 @@ Four filters are pre-defined and always available:
   * [Mermaid filter](https://www.npmjs.com/package/mermaid-filter)
   * Included as a dependency, so users of this package don't have to rely on this package being updated to get the latest version.
 
-## Styling
+## Default Template
 
 ### Layout
 
@@ -79,6 +79,48 @@ The following classes are available for example numbering and caption formatting
 * example-caption - Basic styling for example captions.
 
 Equivalent classes are available for figures and tables (e.g., "figure-caption", "table-number-before").
+
+### Tabs
+
+Sections may be collapsed into tabs by styling the outer section with ".tabbed". Subsections (those with a heading one level down) become the tabs.
+
+For example:
+
+```markdown
+## This Section Will Be Tabbed {.tabbed}
+
+Some introductory text here. Anything that appears before the first heading one level down will remain outside the tabs.
+
+### First Tab {.unnumbered .unlisted}
+
+Whatever is here appears in the first tab.
+
+### Second Tab {.unnumbered .unlisted}
+
+Time for seconds!
+
+### Third Tab {.unnumbered .unlisted}
+
+Tomorrow and tomorrow and tomorrow...
+
+## The Next Section
+
+Returning to the same or higher level ends the tabs.
+```
+
+Would be rendered (roughly) as:
+
+> **This Section Will Be Tabbed**
+>
+> | *First Tab* | Second Tab | Third Tab |
+>
+> Whatever is here appears in the first tab.
+>
+> **The Next Section**
+>
+> Returning to the same or higher level ends the tabs.
+
+Note that the tabs themselves MUST be styled with ".unnumbered .unlisted" to prevent them from appearing in the table of contents. Tabs can't be used as link targets.
 
 ## Configuration
 
