@@ -463,7 +463,11 @@ function runPandoc(args: readonly string[], inputDirectory: string, outputDirect
 
     try {
         const spawnResult = spawnSync("pandoc", args, {
-            stdio: ["inherit", "inherit", "inherit"]
+            stdio: ["inherit", "inherit", "inherit"],
+            env: {
+                ...process.env,
+                MERMAID_FILTER_FORMAT: "svg"
+            }
         });
 
         if (spawnResult.error !== undefined) {
