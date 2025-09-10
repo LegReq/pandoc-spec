@@ -84,6 +84,11 @@
 <!-- AnchorJS -->
 <script src="https://cdn.jsdelivr.net/npm/anchor-js/anchor.min.js"></script>
 
+<!-- LemonadeJS JavaScript Tabs -->
+<script src="https://cdn.jsdelivr.net/npm/lemonadejs/dist/lemonade.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@lemonadejs/tabs/dist/index.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@lemonadejs/tabs/dist/style.min.css" />
+
 <script>
     // Add anchors to all headings (default excludes h1), except for those with class "no-anchor".
     anchors.add("h1, h2, h3, h4, h5, h6").remove(".no-anchor");
@@ -166,6 +171,79 @@
                     e.preventDefault();
                 });
             }
+        }
+
+        function processElements(parentElement, elements, i, enclosingLevel = 0, targetElement = null, headingCallback = null) {
+            let done = elements === undefined;
+
+            while (!done && i < elements.length) {
+                const element = elements[i];
+
+                const level = /[hH][1-6]/.test(element.tagName) ? Number(element.tagName.substring(1)) : 10;
+
+                // Level less than or equal to enclosing level signals end of heading content.
+                done = level <= enclosingLevel;
+
+                // If done, index will be reprocessed by caller.
+                if (!done) {
+                    let specialHeading = false;
+
+                    if (level !== 10) {
+                        if (element.classList.contains("tabbed")) {
+                            specialHeading = true;
+
+                            // Remove so that it's processed as normal on next iteration.
+                            element.classList.remove("tabbed");
+
+                            let tabGroupElement = null;
+
+                            processElements(parentElement, elements, i + 1, level, null, (siblingHeadingElement, siblingLevel, i) => {
+                                // Anything between start of tab group and first tab remains unmodified.
+                                if (tabGroupElement === null) {
+                                    tabGroupElement = document.createElement("div");
+                                    tabGroupElement.setAttribute("class", "tabbed");
+
+                                    parentElement.insertBefore(tabGroupElement, siblingHeadingElement);
+                                }
+
+                                const tabElement = document.createElement("div");
+
+                                // TODO Copy additional attributes.
+
+                                tabElement.setAttribute("title", siblingHeadingElement.textContent);
+
+                                // Replace heading element with tab element.
+                                tabGroupElement.appendChild(tabElement);
+                                parentElement.removeChild(siblingHeadingElement);
+
+                                processElements(parentElement, elements, i + 1, siblingLevel, tabElement);
+                            });
+                        } else if (headingCallback !== null && level === enclosingLevel + 1) {
+                            specialHeading = true;
+
+                            headingCallback(element, level, i);
+                        }
+                    }
+
+                    if (!specialHeading) {
+                        // Processing the current element's child nodes doesn't advance the current index.
+                        processElements(element, element.childNodes, 0);
+
+                        if (targetElement !== null) {
+                            targetElement.appendChild(element.cloneNode(true));
+                            parentElement.removeChild(element);
+                        } else {
+                            i++;
+                        }
+                    }
+                }
+            }
+        }
+
+        processElements(document.body, document.body.childNodes, 0);
+
+        for (const tabGroupElement of document.querySelectorAll("div.tabbed")) {
+            Tabs(tabGroupElement);
         }
     });
 </script>
