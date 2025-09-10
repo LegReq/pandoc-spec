@@ -1,22 +1,30 @@
-## Specification
+## Specification {.tabbed}
 
-### Inputs
+This section is tabbed for your reading pleasure.
+
+### Inputs {.tabbed .unnumbered .unlisted}
 
 Eum tenetur minus in voluptatem quia aut vitae incidunt et illum quia. Vel temporibus doloremque in quasi dolorum aut debitis galisum. Ut placeat voluptatem et vero explicabo est mollitia repudiandae. Quo blanditiis recusandae et Quis corporis non esse quae.
+
+#### A String {.unnumbered .unlisted}
 
 Eos natus nulla ad voluptatum nobis sed quos expedita ut galisum perferendis nam eaque dolores. Sit sunt laborum et aliquam atque sit natus enim est reprehenderit voluptatem aut illum sunt aut cumque temporibus in temporibus deleniti.
 
 Aut voluptas enim ex nihil quisquam et odit quam. In expedita quasi sit modi tempora id aspernatur enim in molestiae delectus vel sunt suscipit et corporis ullam sed magni amet.
 
+#### A Number {.unnumbered .unlisted}
+
 Aut laborum deleniti et asperiores magni ut veniam vitae. Sed enim distinctio est similique assumenda in voluptas velit sed illum eligendi qui maiores autem! Et galisum rerum qui enim officiis et voluptate voluptatem sed necessitatibus quia et cupiditate explicabo non numquam quia.
 
 Ut voluptatibus illo sit porro quae ab accusamus corporis et omnis vero At consequatur sapiente ea quasi tempore eum dolor saepe! Vel delectus accusamus id internos debitis non neque doloremque. Sit aliquam fugiat rem esse beatae sed iste quidem est accusamus officiis sed amet officiis ut ratione veniam.
+
+#### Undefined {.unnumbered .unlisted}
 
 Id praesentium voluptatum et earum dolor sit numquam autem. Ea similique repudiandae et minus adipisci sit dolorum quas eum vero galisum et dolor beatae aut consectetur facere. Et necessitatibus omnis qui soluta ipsa et adipisci officia.
 
 Et accusamus architecto et repudiandae veritatis qui quos autem sit doloribus praesentium aut rerum delectus. Quo magni facilis quo fuga accusamus ut minus reprehenderit. Non tenetur fugiat et natus illum 33 fugit odio id incidunt amet.
 
-### Logic
+### Logic {.unnumbered .unlisted}
 
 Qui quasi architecto in iste recusandae non suscipit molestiae qui laudantium fugiat. Qui architecto facilis est praesentium architecto cum itaque velit et galisum sequi ex quas minima. Non esse quam et eveniet optio est expedita deserunt.
 
@@ -106,7 +114,7 @@ Sit autem eius ex atque voluptate in rerum sint est saepe distinctio et galisum 
 
 Et [voluptatibus nemo](#a-mermaid-figure) et [voluptatem repudiandae](#a-typescript-example) est veniam minus. Ut corrupti neque eos tempore iste eos commodi quia.
 
-### Outputs
+### Outputs {.unnumbered .unlisted}
 
 Sit blanditiis fugiat in libero quaerat aut minus inventore qui velit reprehenderit. Quo dolorem minus ea nulla necessitatibus ea aliquam neque eos delectus odio sed aspernatur omnis et autem ratione aut vitae omnis. Sit quia consequatur est eligendi sint eos ullam recusandae ut corporis quisquam sed deleniti omnis aut minus modi.
 
