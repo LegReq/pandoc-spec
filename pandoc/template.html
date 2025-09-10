@@ -211,7 +211,21 @@
 
                                 const tabElement = document.createElement("div");
 
-                                // TODO Copy additional attributes.
+                                // Copy classes except unnumbered and unlisted.
+                                for (const classItem of siblingHeadingElement.classList) {
+                                    if (classItem !== "unnumbered" && classItem !== "unlisted") {
+                                        tabElement.classList.add(classItem);
+                                    }
+                                }
+
+                                // Copy additional attributes.
+                                [...siblingHeadingElement.attributes].forEach(({name, value}) => {
+                                    // Class attribute is handled separately.
+                                    if (name !== "class") {
+                                        console.log(`Setting ${name} = ${value}`);
+                                        tabElement.setAttribute(name, value);
+                                    }
+                                });
 
                                 tabElement.setAttribute("title", siblingHeadingElement.textContent);
 
