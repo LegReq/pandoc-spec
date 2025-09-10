@@ -158,18 +158,21 @@
         for (const link of document.getElementsByTagName("a")) {
             if (link.hash !== "" && link.origin === location.origin && link.pathname === location.pathname) {
                 const targetElement = document.getElementById(link.hash.substring(1));
-                const target = `$${location.origin}$${location.pathname}$${location.search}#$${targetElement.id}`;
 
-                link.addEventListener("click", (e) => {
-                    // Add target to history.
-                    history.pushState(null, "", target);
+                if (targetElement !== null) {
+                    const target = `$${location.origin}$${location.pathname}$${location.search}#$${targetElement.id}`;
 
-                    resetTimeout();
+                    link.addEventListener("click", (e) => {
+                        // Add target to history.
+                        history.pushState(null, "", target);
 
-                    // Bring the target element into view and prevent default click behaviour.
-                    targetElement.scrollIntoView(true);
-                    e.preventDefault();
-                });
+                        resetTimeout();
+
+                        // Bring the target element into view and prevent default click behaviour.
+                        targetElement.scrollIntoView(true);
+                        e.preventDefault();
+                    });
+                }
             }
         }
 
