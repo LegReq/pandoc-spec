@@ -34,13 +34,13 @@
   },
   "devDependencies": {
     "@legreq/tsdev": "beta",
-    "bootstrap": "^5.3.7",
-    "sass": "^1.90.0"
+    "bootstrap": "^5.3.8",
+    "sass": "^1.92.1"
   },
   "dependencies": {
     "@legreq/pandoc-defref": "beta",
     "chokidar": "^4.0.3",
-    "decamelize": "^6.0.0",
+    "decamelize": "^6.0.1",
     "glob": "^11.0.3",
     "meow": "^13.2.0",
     "mermaid-filter": "^1.4.7",
