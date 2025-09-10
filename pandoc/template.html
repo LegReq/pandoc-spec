@@ -84,7 +84,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@lemonadejs/tabs@5.2.0/dist/style.min.css" />
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
+    document.addEventListener("DOMContentLoaded", async () => {
         // Add anchors to all headings (default excludes h1), except for those with class "unlisted".
         anchors.add("h1, h2, h3, h4, h5, h6").remove(".unlisted");
 
@@ -170,7 +170,7 @@
             }
         }
 
-        function processElements(parentElement, elements, i, enclosingLevel = 0, targetElement = null, headingCallback = null) {
+        async function processElements(parentElement, elements, i, enclosingLevel = 0, targetElement = null, headingCallback = null) {
             let done = elements === undefined;
 
             while (!done && i < elements.length) {
@@ -194,7 +194,7 @@
 
                             let tabGroupElement = null;
 
-                            processElements(parentElement, elements, i + 1, level, null, (siblingHeadingElement, siblingLevel, i) => {
+                            await processElements(parentElement, elements, i + 1, level, null, async (siblingHeadingElement, siblingLevel, i) => {
                                 // Anything between start of tab group and first tab remains unmodified.
                                 if (tabGroupElement === null) {
                                     tabGroupElement = document.createElement("div");
@@ -213,7 +213,7 @@
                                 }
 
                                 // Copy additional attributes.
-                                [...siblingHeadingElement.attributes].forEach(({name, value}) => {
+                                [...siblingHeadingElement.attributes].forEach(({ name, value }) => {
                                     // Class attribute is handled separately.
                                     if (name !== "class") {
                                         tabElement.setAttribute(name, value);
@@ -226,18 +226,18 @@
                                 tabGroupElement.appendChild(tabElement);
                                 parentElement.removeChild(siblingHeadingElement);
 
-                                processElements(parentElement, elements, i + 1, siblingLevel, tabElement);
+                                await processElements(parentElement, elements, i + 1, siblingLevel, tabElement);
                             });
                         } else if (headingCallback !== null && level === enclosingLevel + 1) {
                             specialHeading = true;
 
-                            headingCallback(element, level, i);
+                            await headingCallback(element, level, i);
                         }
                     }
 
                     if (!specialHeading) {
                         // Processing the current element's child nodes doesn't advance the current index.
-                        processElements(element, element.childNodes, 0);
+                        await processElements(element, element.childNodes, 0);
 
                         if (targetElement !== null) {
                             targetElement.appendChild(element.cloneNode(true));
@@ -250,8 +250,9 @@
             }
         }
 
-        processElements(document.body, document.body.childNodes, 0);
+        await processElements(document.body, document.body.childNodes, 0);
 
+        // Convert tag group elements to tabs.
         for (const tabGroupElement of document.querySelectorAll("div.tabbed")) {
             Tabs(tabGroupElement);
         }
