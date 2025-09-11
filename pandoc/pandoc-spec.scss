@@ -75,21 +75,6 @@ $toc-breakpoint: map.get(bootstrap.$grid-breakpoints, $toc-breakpoint-size) !def
   counter-reset: example-counter;
 }
 
-// Reset figure counter.
-.figure-counter-reset {
-  counter-reset: figure-counter;
-}
-
-// Reset table counter.
-.table-counter-reset {
-  counter-reset: table-counter;
-}
-
-// Counters are reset when content is generated.
-.content {
-  counter-reset: example-counter figure-counter table-counter;
-}
-
 // Increment example counter and format example title and number.
 .example-number {
   counter-increment: example-counter 1;
@@ -97,28 +82,33 @@ $toc-breakpoint: map.get(bootstrap.$grid-breakpoints, $toc-breakpoint-size) !def
 }
 
 // Alias example number after.
-.example-number-after {
+.content .example-number-after {
   @extend .example-number;
 }
 
 // Apply example number after example title.
-.example-number-after::after {
+.content .example-number-after::after {
   content: " " counter(example-counter);
 }
 
 // Alias example number before.
-.example-number-before {
+.content .example-number-before {
   @extend .example-number;
 }
 
 // Apply example number before example title.
-.example-number-before::before {
+.content .example-number-before::before {
   content: counter(example-counter) ". ";
 }
 
 // Format example caption.
 .example-caption {
   font-style: italic;
+}
+
+// Reset figure counter.
+.figure-counter-reset {
+  counter-reset: figure-counter;
 }
 
 // Increment figure counter and format figure title and number.
@@ -128,28 +118,33 @@ $toc-breakpoint: map.get(bootstrap.$grid-breakpoints, $toc-breakpoint-size) !def
 }
 
 // Alias figure number after.
-.figure-number-after {
+.content .figure-number-after {
   @extend .figure-number;
 }
 
 // Apply figure number after figure title.
-.figure-number-after::after {
+.content .figure-number-after::after {
   content: " " counter(figure-counter);
 }
 
 // Alias figure number before.
-.figure-number-before {
+.content .figure-number-before {
   @extend .figure-number;
 }
 
 // Apply figure number before figure title.
-.figure-number-before::before {
+.content .figure-number-before::before {
   content: counter(figure-counter) ". ";
 }
 
 // Format figure caption.
 .figure-caption {
   font-style: italic;
+}
+
+// Reset table counter.
+.table-counter-reset {
+  counter-reset: table-counter;
 }
 
 // Increment table counter and format table title and number.
@@ -159,26 +154,31 @@ $toc-breakpoint: map.get(bootstrap.$grid-breakpoints, $toc-breakpoint-size) !def
 }
 
 // Alias table number after.
-.table-number-after {
+.content .table-number-after {
   @extend .table-number;
 }
 
 // Apply table number after table title.
-.table-number-after::after {
+.content .table-number-after::after {
   content: " " counter(table-counter);
 }
 
 // Alias table number before.
-.table-number-before {
+.content .table-number-before {
   @extend .table-number;
 }
 
 // Apply table number before table title.
-.table-number-before::before {
+.content .table-number-before::before {
   content: counter(table-counter) ". ";
 }
 
 // Format table caption.
 .table-caption {
   font-style: italic;
+}
+
+// Counters are initialized when content is generated.
+.content {
+  counter-reset: example-counter figure-counter table-counter;
 }
