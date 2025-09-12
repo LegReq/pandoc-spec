@@ -1,0 +1,12 @@
+{
+  "copyFiles": [
+    {
+      "from": "../tsdev/.github/workflows/release.yml",
+      "to": ".github/workflows/"
+    }
+  ],
+
+  "copyFilesSettings": {
+    "whenFileExists": "overwrite"
+  }
+}

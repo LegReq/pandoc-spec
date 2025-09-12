@@ -23,6 +23,7 @@
     "mermaid"
   ],
   "scripts": {
+    "copy-workflows": "copy-files-from-to --config copy-workflows.json",
     "lint": "eslint .",
     "sass": "sass --load-path=node_modules --quiet-deps --style=compressed pandoc/pandoc-spec.scss pandoc/pandoc-spec.css",
     "sass-watch": "sass --watch --load-path=node_modules --quiet-deps pandoc/pandoc-spec.scss pandoc/pandoc-spec.css",
@@ -35,6 +36,7 @@
   "devDependencies": {
     "@legreq/tsdev": "beta",
     "bootstrap": "^5.3.8",
+    "copy-files-from-to": "^3.12.1",
     "sass": "^1.92.1"
   },
   "dependencies": {
