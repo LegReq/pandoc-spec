@@ -46,6 +46,7 @@
     "glob": "^11.0.3",
     "meow": "^13.2.0",
     "mermaid-filter": "^1.4.7",
-    "tslog": "^4.9.3"
+    "typescript-logging": "^2.2.0",
+    "typescript-logging-category-style": "^2.2.0"
   }
 }
