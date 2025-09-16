@@ -18,9 +18,11 @@ import { spawnSync } from "child_process";
 import chokidar from "chokidar";
 import fs from "fs";
 import * as path from "node:path";
+import { LogLevel } from "typescript-logging";
 import { copyFiles, modulePath, workingPath } from "./file.js";
+import { getLogger, updateLogger } from "./logger-helper.js";
 import { PuppeteerConfigurator } from "./puppeteer.js";
-import { ExtendedLogger, isNonNullObject, LogLevel } from "./utility.js";
+import { isNonNullObject } from "./utility.js";
 
 const MINUTES_PER_HOUR = 60;
 const MILLISECONDS_PER_SECOND = 1000;
@@ -29,7 +31,7 @@ const ISO_DATE_LENGTH = 10;
 
 const DEFAULT_WATCH_WAIT_MILLISECONDS = 2000;
 
-const logger = new ExtendedLogger("pandoc-spec");
+const logger = getLogger("");
 
 /**
  * Filter.
@@ -286,13 +288,18 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     // Build options from file options, overridden by parameter options.
     const options = mergeOptions(fileOptions, parameterOptions);
 
-    logger.logLevel = options.logLevel;
-
-    if (logger.validLogLevel(LogLevel.Trace)) {
-        logger.trace(`Parameter options:\n${JSON.stringify(parameterOptions, null, 2)}`);
-        logger.trace(`File options:\n${JSON.stringify(fileOptions, null, 2)}`);
-        logger.trace(`Consolidated options:\n${JSON.stringify(options, null, 2)}`);
+    if (options.logLevel !== undefined) {
+        const logLevel = LogLevel.toLogLevel(options.logLevel);
+        if (logLevel !== undefined) {
+            updateLogger(logger, {
+                level: logLevel
+            });
+        }
     }
+
+    logger.trace(() => `Parameter options:\n${JSON.stringify(parameterOptions, null, 2)}`);
+    logger.trace(() => `File options:\n${JSON.stringify(fileOptions, null, 2)}`);
+    logger.trace(() => `Consolidated options:\n${JSON.stringify(options, null, 2)}`);
 
     // Make sure that result meets the minimum requirements.
     if (!isOptions(options)) {
@@ -354,12 +361,10 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         ...options.inputFiles
     ].filter(arg => arg !== "");
 
-    if (logger.validLogLevel(LogLevel.Debug)) {
-        logger.debug(`Input directory: ${inputDirectory}`);
-        logger.debug(`Output directory: ${outputDirectory}`);
+    logger.debug(() => `Input directory: ${inputDirectory}`);
+    logger.debug(() => `Output directory: ${outputDirectory}`);
 
-        logger.debug(`Pandoc arguments:\n${args.join("\n")}`);
-    }
+    logger.debug(() => `Pandoc arguments:\n${args.join("\n")}`);
 
     if (options.cleanOutput ?? false) {
         fs.rmSync(outputDirectory, {
