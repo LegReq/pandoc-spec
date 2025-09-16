@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import fs from "fs";
+import * as fs from "node:fs";
 import { globIterateSync } from "glob";
-import path from "node:path";
+import * as path from "node:path";
 
 /**
  * Get the module path of path relative to the module root.
@@ -28,6 +28,19 @@ import path from "node:path";
  */
 export function modulePath(relativePath: string): string {
     return decodeURI(new URL(relativePath, import.meta.url).pathname);
+}
+
+/**
+ * Fix windows path.
+ *
+ * @param path
+ * Path.
+ *
+ * @returns
+ * Fixed path if windows or original path if not.
+ */
+function windowsPathFix(path: string): string {
+    return process.platform === "win32" && /^\/[a-zA-Z]:\//.test(path) ? path.substring(1).replace(/\//g, "\\") : path;
 }
 
 /**
@@ -54,7 +67,7 @@ export function workingPath(relativePath: string | undefined): string | undefine
 
 // eslint-disable-next-line jsdoc/require-jsdoc -- Overload implementation.
 export function workingPath(relativePath: string | undefined): string | undefined {
-    return relativePath !== undefined ? path.resolve(relativePath) : undefined;
+    return relativePath !== undefined ? path.resolve(windowsPathFix(relativePath)) : undefined;
 }
 
 /**

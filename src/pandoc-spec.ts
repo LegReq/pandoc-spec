@@ -16,7 +16,7 @@
 
 import { spawnSync } from "child_process";
 import chokidar from "chokidar";
-import fs from "fs";
+import * as fs from "node:fs";
 import * as path from "node:path";
 import { LogLevel } from "typescript-logging";
 import { copyFiles, modulePath, workingPath } from "./file.js";
@@ -157,7 +157,7 @@ function mergeOptions(fileOptions: Partial<Options>, parameterOptions: Partial<O
     if (parameterOptions !== undefined) {
         // Parameter options override file options.
         for (const [key, value] of Object.entries(parameterOptions)) {
-            if (!Object.hasOwn(options, key)) {
+            if (!(key in options)) {
                 options[key] = value;
             } else {
                 const existingValue = options[key];
@@ -346,8 +346,8 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         arg("--shift-heading-level-by", options.shiftHeadingLevelBy, -1),
         arg("--number-sections", options.numberSections, true),
         arg("--toc", options.generateTOC, true),
-        arg("--lua-filter", modulePath("../pandoc/include-files.lua")),
-        arg("--lua-filter", modulePath("../pandoc/include-code-files.lua")),
+        arg("--lua-filter", workingPath(modulePath("../pandoc/include-files.lua"))),
+        arg("--lua-filter", workingPath(modulePath("../pandoc/include-code-files.lua"))),
         arg("--filter", "mermaid-filter"),
         arg("--filter", "pandoc-defref"),
         ...(options.filters ?? []).map(filter => filter.type !== "json" ? arg("--lua-filter", workingPath(filter.path)) : arg("--filter", filter.path.includes("/") ? workingPath(filter.path) : filter.path)),
