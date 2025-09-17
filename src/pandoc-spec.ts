@@ -564,6 +564,7 @@ function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputD
                 const spawnResult: child_process.SpawnSyncReturns<Buffer> = child_process.spawnSync(pipeRun.command, pipeRun.args, {
                     shell: pipeRun.shell,
                     env: pipeRun.env,
+                    stdio: [pipeStdin === undefined ? "inherit" : "pipe", pipeRun.pipeOutput ? "pipe" : "inherit", "inherit"],
                     input: pipeStdin
                 });
 
