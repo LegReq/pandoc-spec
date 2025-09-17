@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-import { spawnSync } from "child_process";
+import { setTimeout } from "node:timers/promises";
+import child_process from "child_process";
 import chokidar from "chokidar";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import type * as Stream from "node:stream";
 import { LogLevel } from "typescript-logging";
 import { copyFiles, modulePath, workingPath } from "./file.js";
 import { getLogger, updateLogger } from "./logger-helper.js";
@@ -251,7 +253,7 @@ function arg<T>(option: string, value: T | undefined, defaultValue?: T): string 
  * @returns
  * Pandoc exit code.
  */
-export function pandocSpec(parameterOptions?: Partial<Options>): number {
+export async function pandocSpec(parameterOptions?: Partial<Options>): Promise<number> {
     let optionsFile: string;
     let optionsFileRequired: boolean;
 
@@ -312,13 +314,20 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     const inputDirectory = options.inputDirectory !== undefined ? path.resolve(options.inputDirectory) : process.cwd();
     const outputDirectory = options.outputDirectory !== undefined ? path.resolve(options.outputDirectory) : process.cwd();
 
-    const templateFile = workingPath(options.templateFile ?? (options.outputFormat === undefined || options.outputFormat === "html" ? modulePath("../pandoc/template.html") : undefined));
+    const outputFormat = options.outputFormat ?? "html";
+
+    const filters = options.filters ?? [];
+
+    const luaFilters = filters.filter(filter => filter.type !== "json").map(filter => workingPath(filter.path));
+    const jsonFilters = filters.filter(filter => filter.type === "json").map(filter => filter.path.includes("/") ? workingPath(filter.path) : filter.path);
+
+    const templateFile = workingPath(options.templateFile ?? (outputFormat === "html" ? modulePath("../pandoc/template.html") : undefined));
 
     // CSS files don't apply if output format is not HTML.
     const cssFiles = options.cssFiles ?? [];
 
     // Add core SCSS, CSS, and map files as resource files only if output format is HTML.
-    const coreCSSFiles = options.outputFormat === undefined || options.outputFormat === "html" ? [workingPath(modulePath("../pandoc/pandoc-spec.scss")), workingPath(modulePath("../pandoc/pandoc-spec.css")), workingPath(modulePath("../pandoc/pandoc-spec.css.map"))] : [];
+    const coreCSSFiles = outputFormat === "html" ? [workingPath(modulePath("../pandoc/pandoc-spec.scss")), workingPath(modulePath("../pandoc/pandoc-spec.css")), workingPath(modulePath("../pandoc/pandoc-spec.css.map"))] : [];
 
     // Copy CSS files if they are not URIs (i.e., don't start with a URI scheme); the minimum two-character requirement is so that Windows drive letters can be handled.
     const inputResourceFiles = [...cssFiles.filter(cssFile => !/^[A-Za-z][A-Za-z0-9+\-.]+:/.test(cssFile)), ...coreCSSFiles, ...(options.resourceFiles ?? [])];
@@ -338,33 +347,26 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     }
 
     const args: string[] = [
-        "--standalone",
         arg("--verbose", options.verbose),
         arg("--metadata", options.autoDate ?? false ? `date:${adjustedNow.toISOString().substring(0, ISO_DATE_LENGTH)}` : undefined),
         arg("--from", options.inputFormat, "markdown"),
-        arg("--to", options.outputFormat, "html"),
         arg("--shift-heading-level-by", options.shiftHeadingLevelBy, -1),
         arg("--number-sections", options.numberSections, true),
         arg("--toc", options.generateTOC, true),
         arg("--lua-filter", workingPath(modulePath("../pandoc/include-files.lua"))),
         arg("--lua-filter", workingPath(modulePath("../pandoc/include-code-files.lua"))),
-        arg("--filter", "mermaid-filter"),
-        arg("--filter", "pandoc-defref"),
-        ...(options.filters ?? []).map(filter => filter.type !== "json" ? arg("--lua-filter", workingPath(filter.path)) : arg("--filter", filter.path.includes("/") ? workingPath(filter.path) : filter.path)),
+        ...luaFilters.map(luaFilter => arg("--lua-filter", luaFilter)),
         arg("--template", templateFile),
         arg("--include-before-body", workingPath(options.headerFile)),
         arg("--include-after-body", workingPath(options.footerFile)),
         ...variables.map(variable => arg("--variable", variable.value !== undefined ? `${variable.key}:${variable.value}` : variable.key)),
         ...cssFiles.map(cssFile => arg("--css", cssFile)),
-        arg("--output", path.resolve(outputDirectory, options.outputFile)),
         ...(options.additionalOptions ?? []).map(additionalOption => arg(additionalOption.option, additionalOption.value)),
         ...options.inputFiles
     ].filter(arg => arg !== "");
 
     logger.debug(() => `Input directory: ${inputDirectory}`);
     logger.debug(() => `Output directory: ${outputDirectory}`);
-
-    logger.debug(() => `Pandoc arguments:\n${args.join("\n")}`);
 
     if (options.cleanOutput ?? false) {
         fs.rmSync(outputDirectory, {
@@ -384,7 +386,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     process.chdir(inputDirectory);
 
     // Pandoc must run successfully the first time.
-    const status = runPandoc(args, inputDirectory, outputDirectory, inputResourceFiles);
+    const status = await runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
 
     // Ignore watch if running inside a GitHub Action.
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
@@ -413,7 +415,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
         const watchWait = options.watchWait ?? DEFAULT_WATCH_WAIT_MILLISECONDS;
 
-        let timeout: NodeJS.Timeout | undefined = undefined;
+        let abortController: AbortController | undefined = undefined;
 
         logger.info("Watching for changes...");
 
@@ -427,15 +429,21 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         }).on("all", (eventName, path) => {
             logger.debug(`${eventName}: ${path}`);
 
-            if (timeout === undefined) {
-                timeout = setTimeout(() => {
-                    runPandoc(args, inputDirectory, outputDirectory, inputResourceFiles);
-                    logger.info("Watching for changes...");
-                }, watchWait);
-            } else {
-                // Run Pandoc only after timeout after last event. If not running, this will reactivate it.
-                timeout.refresh();
+            if (abortController !== undefined) {
+                // Run Pandoc only after timeout after last event.
+                abortController.abort();
             }
+
+            abortController = new AbortController();
+
+            setTimeout(watchWait, undefined, {
+                signal: abortController.signal
+            }).then(async () => {
+                await runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
+                logger.info("Watching for changes...");
+            }).catch((e: unknown) => {
+                logger.error("Timer failed", e);
+            });
         });
     }
 
@@ -444,49 +452,158 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 }
 
 /**
+ * Pipe run configuration.
+ */
+interface PipeRun {
+    /**
+     * If true, run command inside a shell.
+     */
+    shell: boolean;
+
+    /**
+     * Command.
+     */
+    command: string;
+
+    /**
+     * Arguments.
+     */
+    args: readonly string[];
+
+    /**
+     * If true, output is piped to the next pipe run.
+     */
+    pipeOutput: boolean;
+
+    /**
+     * Environment.
+     */
+    env?: NodeJS.ProcessEnv | undefined;
+}
+
+/**
  * Run Pandoc.
  *
- * @param args
  * Pandoc arguments.
  *
  * @param inputDirectory
  * Input directory.
  *
- * @param outputDirectory
- * Output directory.
- *
  * @param inputResourceFiles
  * Input resource files to copy to output directory.
  *
+ * @param outputDirectory
+ * Output directory.
+ *
+ * @param outputFile
+ * Output file.
+ *
+ * @param outputFormat
+ * Output format.
+ *
+ * @param args
+ * Pandoc arguments.
+ *
+ * @param jsonFilters
+ * JSON filters.
+ *
  * @returns
- * Pandoc exit code.
+ * Exit code from failed process or zero.
  */
-function runPandoc(args: readonly string[], inputDirectory: string, outputDirectory: string, inputResourceFiles: string[]): number {
+async function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputDirectory: string, outputFile: string, outputFormat: string, args: readonly string[], jsonFilters: readonly string[]): Promise<number> {
     const puppeteerConfigurator = new PuppeteerConfigurator(inputDirectory);
 
     let status = 0;
 
     try {
-        const spawnResult = spawnSync("pandoc", args, {
-            stdio: ["inherit", "inherit", "inherit"],
-            env: {
-                ...process.env,
-                MERMAID_FILTER_FORMAT: "svg"
-            }
+        const pipeRuns: PipeRun[] = [];
+
+        pipeRuns.push({
+            shell: false,
+            command: "pandoc",
+            args: [
+                "--standalone",
+                ...args,
+                arg("--to", "json")
+            ],
+            pipeOutput: true
         });
 
-        if (spawnResult.error !== undefined) {
-            throw spawnResult.error;
+        const isWindows = process.platform === "win32";
+
+        for (const filter of ["mermaid-filter", "pandoc-defref", ...jsonFilters]) {
+            // Mermaid filter should export as SVG.
+            const env: NodeJS.ProcessEnv | undefined = filter === "mermaid-filter" ?
+                {
+                    ...process.env,
+                    MERMAID_FILTER_FORMAT: "svg"
+                } :
+                undefined;
+
+            // Some filters are scripts, which aren't recognized as executables in Windows.
+            pipeRuns.push({
+                shell: isWindows,
+                command: filter,
+                args: [outputFormat],
+                pipeOutput: true,
+                env
+            });
         }
 
-        if (spawnResult.status === null) {
-            throw new Error(`Terminated by signal ${spawnResult.signal}`);
+        pipeRuns.push({
+            shell: false,
+            command: "pandoc",
+            args: [
+                "--standalone",
+                arg("--from", "json"),
+                arg("--to", outputFormat),
+                arg("--output", path.resolve(outputDirectory, outputFile))
+            ],
+            pipeOutput: false
+        });
+
+        let pipeStdin: Stream = process.stdin;
+
+        const childProcessPromises: Array<Promise<number>> = [];
+
+        for (const pipeRun of pipeRuns) {
+            logger.debug(() => `Command: ${pipeRun.command}`);
+            logger.debug(() => `Arguments:\n${pipeRun.args.join("\n")}`);
+
+            const childProcess = child_process.spawn(pipeRun.command, pipeRun.args, {
+                stdio: [pipeStdin, pipeRun.pipeOutput ? "pipe" : "inherit", "inherit"],
+                env: pipeRun.env
+            });
+
+            // Stdout will be null only on the last pipe run.
+            if (childProcess.stdout !== null) {
+                pipeStdin = childProcess.stdout;
+            }
+
+            // eslint-disable-next-line promise/avoid-new -- Promise required to wait for processes to complete.
+            childProcessPromises.push(new Promise<number>((resolve, reject) => {
+                childProcess.on("close", (code, signal) => {
+                    if (code !== null) {
+                        if (code !== 0) {
+                            logger.error(`Command failed with status ${code}`);
+                        }
+
+                        resolve(code);
+                    } else {
+                        reject(new Error(`Terminated by signal ${signal}`));
+                    }
+                });
+            }));
         }
 
-        if (spawnResult.status !== 0) {
-            logger.error(`Failed with status ${spawnResult.status}`);
-            status = spawnResult.status;
-        }
+        const codes = await Promise.all(childProcessPromises).catch((e: unknown) => {
+            logger.error("Process failed", e);
+
+            return [-1];
+        });
+
+        // Get the first non-zero code.
+        status = codes.reduce((currentCode, code) => currentCode !== 0 ? currentCode : code, 0);
     } finally {
         // Restore Puppeteer configuration.
         puppeteerConfigurator.finalize();
