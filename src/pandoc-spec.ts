@@ -344,8 +344,9 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
         });
     }
 
+    const verbose = options.verbose ?? false;
+
     const args: string[] = [
-        arg("--verbose", options.verbose),
         arg("--metadata", options.autoDate ?? false ? `date:${adjustedNow.toISOString().substring(0, ISO_DATE_LENGTH)}` : undefined),
         arg("--from", options.inputFormat, "markdown"),
         arg("--shift-heading-level-by", options.shiftHeadingLevelBy, -1),
@@ -384,7 +385,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
     process.chdir(inputDirectory);
 
     // Pandoc must run successfully the first time.
-    const status = runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
+    const status = runPandoc(verbose, inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
 
     // Ignore watch if running inside a GitHub Action.
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
@@ -429,7 +430,7 @@ export function pandocSpec(parameterOptions?: Partial<Options>): number {
 
             if (timeout === undefined) {
                 timeout = setTimeout(() => {
-                    runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
+                    runPandoc(verbose, inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
                     logger.info("Watching for changes...");
                 }, watchWait);
             } else {
@@ -478,6 +479,9 @@ interface PipeRun {
  *
  * Pandoc arguments.
  *
+ * @param verbose
+ * If true, run Pandoc in verbose mode.
+ *
  * @param inputDirectory
  * Input directory.
  *
@@ -502,10 +506,13 @@ interface PipeRun {
  * @returns
  * Exit code from failed process or zero.
  */
-function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputDirectory: string, outputFile: string, outputFormat: string, args: readonly string[], jsonFilters: readonly string[]): number {
+function runPandoc(verbose: boolean, inputDirectory: string, inputResourceFiles: string[], outputDirectory: string, outputFile: string, outputFormat: string, args: readonly string[], jsonFilters: readonly string[]): number {
     const puppeteerConfigurator = new PuppeteerConfigurator(inputDirectory);
 
     let status = 0;
+
+    const verboseArg = arg("--verbose", verbose);
+    const verboseArgs = verboseArg !== "" ? [verboseArg] : [];
 
     try {
         const pipeRuns: PipeRun[] = [];
@@ -514,6 +521,7 @@ function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputD
             shell: false,
             command: "pandoc",
             args: [
+                ...verboseArgs,
                 "--standalone",
                 ...args,
                 arg("--to", "json")
@@ -546,6 +554,7 @@ function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputD
             shell: false,
             command: "pandoc",
             args: [
+                ...verboseArgs,
                 "--standalone",
                 arg("--from", "json"),
                 arg("--to", outputFormat),
