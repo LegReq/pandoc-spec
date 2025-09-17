@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-import { setTimeout } from "node:timers/promises";
 import child_process from "child_process";
 import chokidar from "chokidar";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import type * as Stream from "node:stream";
 import { LogLevel } from "typescript-logging";
 import { copyFiles, modulePath, workingPath } from "./file.js";
 import { getLogger, updateLogger } from "./logger-helper.js";
@@ -253,7 +251,7 @@ function arg<T>(option: string, value: T | undefined, defaultValue?: T): string 
  * @returns
  * Pandoc exit code.
  */
-export async function pandocSpec(parameterOptions?: Partial<Options>): Promise<number> {
+export function pandocSpec(parameterOptions?: Partial<Options>): number {
     let optionsFile: string;
     let optionsFileRequired: boolean;
 
@@ -386,7 +384,7 @@ export async function pandocSpec(parameterOptions?: Partial<Options>): Promise<n
     process.chdir(inputDirectory);
 
     // Pandoc must run successfully the first time.
-    const status = await runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
+    const status = runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
 
     // Ignore watch if running inside a GitHub Action.
     if (status === 0 && options.watch === true && process.env["GITHUB_ACTIONS"] !== "true") {
@@ -415,7 +413,7 @@ export async function pandocSpec(parameterOptions?: Partial<Options>): Promise<n
 
         const watchWait = options.watchWait ?? DEFAULT_WATCH_WAIT_MILLISECONDS;
 
-        let abortController: AbortController | undefined = undefined;
+        let timeout: NodeJS.Timeout | undefined = undefined;
 
         logger.info("Watching for changes...");
 
@@ -429,21 +427,15 @@ export async function pandocSpec(parameterOptions?: Partial<Options>): Promise<n
         }).on("all", (eventName, path) => {
             logger.debug(`${eventName}: ${path}`);
 
-            if (abortController !== undefined) {
-                // Run Pandoc only after timeout after last event.
-                abortController.abort();
+            if (timeout === undefined) {
+                timeout = setTimeout(() => {
+                    runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
+                    logger.info("Watching for changes...");
+                }, watchWait);
+            } else {
+                // Run Pandoc only after timeout after last event. If not running, this will reactivate it.
+                timeout.refresh();
             }
-
-            abortController = new AbortController();
-
-            setTimeout(watchWait, undefined, {
-                signal: abortController.signal
-            }).then(async () => {
-                await runPandoc(inputDirectory, inputResourceFiles, outputDirectory, options.outputFile, outputFormat, args, jsonFilters);
-                logger.info("Watching for changes...");
-            }).catch((e: unknown) => {
-                logger.error("Timer failed", e);
-            });
         });
     }
 
@@ -510,7 +502,7 @@ interface PipeRun {
  * @returns
  * Exit code from failed process or zero.
  */
-async function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputDirectory: string, outputFile: string, outputFormat: string, args: readonly string[], jsonFilters: readonly string[]): Promise<number> {
+function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputDirectory: string, outputFile: string, outputFormat: string, args: readonly string[], jsonFilters: readonly string[]): number {
     const puppeteerConfigurator = new PuppeteerConfigurator(inputDirectory);
 
     let status = 0;
@@ -562,48 +554,33 @@ async function runPandoc(inputDirectory: string, inputResourceFiles: string[], o
             pipeOutput: false
         });
 
-        let pipeStdin: Stream = process.stdin;
-
-        const childProcessPromises: Array<Promise<number>> = [];
+        let pipeStdin: NodeJS.ArrayBufferView | undefined = undefined;
 
         for (const pipeRun of pipeRuns) {
-            logger.debug(() => `Command: ${pipeRun.command}`);
-            logger.debug(() => `Arguments:\n${pipeRun.args.join("\n")}`);
+            if (status === 0) {
+                logger.debug(() => `Command: ${pipeRun.command}`);
+                logger.debug(() => `Arguments:\n${pipeRun.args.join("\n")}`);
 
-            const childProcess = child_process.spawn(pipeRun.command, pipeRun.args, {
-                stdio: [pipeStdin, pipeRun.pipeOutput ? "pipe" : "inherit", "inherit"],
-                env: pipeRun.env
-            });
-
-            // Stdout will be null only on the last pipe run.
-            if (childProcess.stdout !== null) {
-                pipeStdin = childProcess.stdout;
-            }
-
-            // eslint-disable-next-line promise/avoid-new -- Promise required to wait for processes to complete.
-            childProcessPromises.push(new Promise<number>((resolve, reject) => {
-                childProcess.on("close", (code, signal) => {
-                    if (code !== null) {
-                        if (code !== 0) {
-                            logger.error(`Command failed with status ${code}`);
-                        }
-
-                        resolve(code);
-                    } else {
-                        reject(new Error(`Terminated by signal ${signal}`));
-                    }
+                const spawnResult: child_process.SpawnSyncReturns<Buffer> = child_process.spawnSync(pipeRun.command, pipeRun.args, {
+                    shell: pipeRun.shell,
+                    env: pipeRun.env,
+                    input: pipeStdin
                 });
-            }));
+
+                // Status is null if terminated by signal.
+                if (spawnResult.status === null) {
+                    throw new Error(`Terminated by signal ${spawnResult.signal}`);
+                }
+
+                if (spawnResult.status !== 0) {
+                    logger.error(`Command ${pipeRun.command} failed with status ${spawnResult.status}`);
+
+                    status = spawnResult.status;
+                } else if (pipeRun.pipeOutput) {
+                    pipeStdin = spawnResult.stdout;
+                }
+            }
         }
-
-        const codes = await Promise.all(childProcessPromises).catch((e: unknown) => {
-            logger.error("Process failed", e);
-
-            return [-1];
-        });
-
-        // Get the first non-zero code.
-        status = codes.reduce((currentCode, code) => currentCode !== 0 ? currentCode : code, 0);
     } finally {
         // Restore Puppeteer configuration.
         puppeteerConfigurator.finalize();
