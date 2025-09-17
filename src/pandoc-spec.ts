@@ -565,7 +565,9 @@ function runPandoc(inputDirectory: string, inputResourceFiles: string[], outputD
                     shell: pipeRun.shell,
                     env: pipeRun.env,
                     stdio: [pipeStdin === undefined ? "inherit" : "pipe", pipeRun.pipeOutput ? "pipe" : "inherit", "inherit"],
-                    input: pipeStdin
+                    input: pipeStdin,
+                    // eslint-disable-next-line @typescript-eslint/no-magic-numbers -- Large buffer for output with embedded images.
+                    maxBuffer: 50 * 1024 * 1024
                 });
 
                 // Status is null if terminated by signal.
