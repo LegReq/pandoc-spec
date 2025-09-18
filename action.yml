@@ -137,7 +137,7 @@ runs:
         then
           cd _branch
       
-          BRANCHES=$(git branch --remotes --format=%\(refname:lstrip=-1\))
+          BRANCHES=$(git ls-remote --branches | grep -oE "[^/]+$")
         
           ls | while read -r branch
           do
@@ -146,11 +146,6 @@ runs:
       
             if [[ $? -ne 0 ]]
             then
-              echo "Grep exit code $?"
-              echo "Deleting branch $branch"
-              echo "Branches:"
-              echo $BRANCHES
-        
               # Branch no longer exists; delete from GitHub Pages.
               rm -rf "$branch"
             fi
@@ -165,14 +160,8 @@ runs:
         
         if [[ "$branch" == "${{ inputs.default-branch }}" ]]
         then
-          echo "Pre-move"
-          ls -R
           # Move entire _branch directory.
           mv _branch "../${{ inputs.pages-path }}"
-          echo "Post-move"
-          ls -R
-          echo "Site post-move"
-          ls -R "../${{ inputs.pages-path }}"
         else
           # Remove previous branch content if it exists and replace it with newly generated content.
           rm -rf "_branch/$branch"
