@@ -16,6 +16,17 @@ inputs:
     required: false
     # Default must match default for path in actions/upload-pages-artifact.
     default: "_site/"
+  include-branches:
+    description: If true, includes non-default branch publication to the "_branch/<branch_name>" path; ignored if include-pages is false.
+    required: false
+  default-branch:
+    description: Default branch for include-branches to filter; ignored if include-branches is false. Default is "main".
+    required: false
+    default: "main"
+  pages-archive:
+    description: Pages archive name; ignored if include-branches is false. Default is "_pages". Temporary directory with this name will be created during build and ZIP file with this name will be published to the root.
+    required: false
+    default: "_pages"
 
 runs:
   using: composite
@@ -58,8 +69,6 @@ runs:
               echo "No scripts found."
               GREP_RESULT=1
             else
-              echo "$NPM_SCRIPTS"
-          
               # Check for package-defined build.
               echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec-action$"
               GREP_RESULT=$?
@@ -90,6 +99,85 @@ runs:
           echo "Running pandoc-spec shell script"
           pandoc-spec
         fi
+        
+    - name: Merge branches
+      if: inputs.include-pages == 'true' && inputs.include-branches == 'true' && github.ref_type == 'branch'
+      shell: bash
+      run: |
+        # Exit codes are handled by script.
+        set +e
+        
+        host_name=$(echo "${{ github.event.repository.owner.name }}.github.io" | tr "[:upper:]" "[:lower:]")
+        repository_name="${{ github.event.repository.name }}"
+        lower_repository_name=$(echo "$repository_name" | tr "[:upper:]" "[:lower:]")
+        
+        if [[ "$lower_repository_name" == "host_name" ]]
+        then
+          pages_url="https://$host_name"
+        else
+          pages_url="https://$host_name/$repository_name"
+        fi
+        
+        pages_archive=${{ inputs.pages-archive }}
+        
+        # Get and unzip GitHub Pages archive.
+        curl -s $pages_url/"$pages_archive".zip -o "$pages_archive".zip
+        if [[ $? -eq 0 ]]
+        then
+          unzip -qq "$pages_archive".zip -d "$pages_archive"
+          rm "$pages_archive".zip
+        else
+          # First time including branches. Treat current content as default branch; will be fixed on next push to default branch. 
+          cp -r "${{ inputs.pages-path }}" "$pages_archive"/
+        fi
+
+        cd "$pages_archive"
+        
+        if [[ -d _branch ]]
+        then
+          cd _branch
+      
+          BRANCHES=$(git branch --remotes --format=%\(refname:lstrip=-1\))
+        
+          ls | while read -r branch
+          do
+            # Check than branch still exists.
+            echo "BRANCHES" | grep -q "^$branch$"
+      
+            if [[ $? -ne 0 ]]
+            then
+              # Branch no longer exists; delete from GitHub Pages.
+              rm -rf "$branch"
+            fi
+          done
+      
+          cd ..
+        else
+          mkdir _branch
+        fi
+        
+        branch=${{ github.ref_name }}
+        
+        if [[ "$branch" == "${{ inputs.default-branch }}" ]]
+        then
+          # Move entire _branch directory.
+          mv _branch "../${{ inputs.pages-path }}/_branch"
+        else
+          # Remove previous branch content if it exists and replace it with newly generated content.
+          rm -rf "_branch/$branch"
+          mkdir "_branch/$branch"
+          mv "../${{ inputs.pages-path }}"/* "_branch/$branch"
+      
+          # Move consolidated directory into place.
+          mv * "../${{ inputs.pages-path }}"
+        fi
+      
+        cd "../${{ inputs.pages-path }}"
+      
+        zip -q -r ../"$pages_archive" .
+        mv ../"$pages_archive".zip .
+      
+        cd ..
 
     - name: Configure GitHub Pages
       if: inputs.include-pages == 'true'

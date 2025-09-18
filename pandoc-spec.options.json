@@ -24,7 +24,7 @@
   "cssFiles": [
     "index.css"
   ],
-  "outputDirectory": "test/_site",
+  "outputDirectory": "_site",
   "cleanOutput": true,
   "outputFile": "index.html"
 }
