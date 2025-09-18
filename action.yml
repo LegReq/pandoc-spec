@@ -65,8 +65,6 @@ runs:
               echo "No scripts found."
               GREP_RESULT=1
             else
-              echo "$NPM_SCRIPTS"
-          
               # Check for package-defined build.
               echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec-action$"
               GREP_RESULT=$?
@@ -116,10 +114,6 @@ runs:
           pages_url="https://$host_name/$repository_name"
         fi
         
-        echo "Pages URL: $pages_url"
-        
-        ls -l
-        
         # Get and unzip GitHub Pages archive.
         curl -s $pages_url/_pages.zip -o _pages.zip
         if [[ $? -eq 0 ]]
@@ -131,11 +125,7 @@ runs:
           cp -r "${{ inputs.pages-path }}" _pages/
         fi
 
-        ls -l
-        
         cd _pages
-        
-        ls -l
         
         if [[ -d _branch ]]
         then
@@ -143,8 +133,6 @@ runs:
       
           BRANCHES=$(git branch --remotes --format=%\(refname:lstrip=-1\))
         
-          echo $BRANCHES
-      
           ls | while read -r branch
           do
             # Check than branch still exists.
@@ -162,13 +150,8 @@ runs:
           mkdir _branch
         fi
         
-        ls -l
-      
         branch=${{ github.ref_name }}
         
-        echo "Branch: $branch"
-        echo "Default: ${{ inputs.default-branch }}"
-      
         if [[ "$branch" == "${{ inputs.default-branch }}" ]]
         then
           # Move entire _branch directory.
