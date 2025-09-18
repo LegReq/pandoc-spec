@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
+/* eslint-disable no-console -- Command-line application. */
+
 import decamelize from "decamelize";
 import meow, { type Flag, type FlagType } from "meow";
-import {
-    type AdditionalOption,
-    type Filter,
-    type Options,
-    pandocSpec,
-    type Variable,
-    type Style
-} from "./pandoc-spec.js";
+import type { AdditionalOption, Filter, Options, Style, Variable } from "./options.js";
+import { PandocSpec } from "./pandoc-spec.js";
 
 /**
  * Extended CLI flag.
@@ -56,6 +52,124 @@ interface ExtendedFlag<PrimitiveType extends FlagType, Type, IsMultiple = false>
  */
 type AnyExtendedFlag =
     ExtendedFlag<"string", string> | ExtendedFlag<"string", string[], true> | ExtendedFlag<"boolean", boolean> | ExtendedFlag<"boolean", boolean[], true> | ExtendedFlag<"number", number> | ExtendedFlag<"number", number[], true>;
+
+/**
+ * Filter parse mapper.
+ *
+ * @param components
+ * Components.
+ *
+ * @returns
+ * Filter.
+ */
+function filterParseMapper(components: string[]): Filter {
+    let filter: Filter;
+
+    switch (components.length) {
+        case 1:
+            filter = {
+                type: "lua",
+                path: components[0]
+            };
+            break;
+
+        case 2:
+            filter = {
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Let Pandoc handle invalid type.
+                type: components[0] as "lua" | "json",
+                path: components[1]
+            };
+            break;
+
+        default: {
+            throw new Error(`Invalid filter: ${components.join(":")}`);
+        }
+    }
+
+    return filter;
+}
+
+/**
+ * Variable parse mapper.
+ *
+ * @param components
+ * Components.
+ *
+ * @returns
+ * Variable.
+ */
+function variableParseMapper(components: string[]): Variable {
+    let variable: Variable;
+
+    switch (components.length) {
+        case 1:
+            variable = {
+                key: components[0]
+            };
+            break;
+
+        case 2:
+            variable = {
+                key: components[0],
+                value: components[1]
+            };
+            break;
+
+        default: {
+            throw new Error(`Invalid variable: ${components.join(":")}`);
+        }
+    }
+
+    return variable;
+}
+
+/**
+ * Style parse mapper.
+ *
+ * @param components
+ * Components.
+ *
+ * @returns
+ * Style.
+ */
+function styleParseMapper(components: string[]): Style {
+    let style: Style;
+
+    switch (components.length) {
+        case 2:
+            style = {
+                name: components[0],
+                className: components[1]
+            };
+            break;
+
+        default: {
+            throw new Error(`Invalid style: ${components.join(":")}`);
+        }
+    }
+
+    return style;
+}
+
+/**
+ * Additional option parse mapper.
+ *
+ * @param components
+ * Components.
+ *
+ * @returns
+ * Additional option.
+ */
+function additionalOptionParseMapper(components: string[]): AdditionalOption {
+    if (components.length !== 2) {
+        throw new Error(`Invalid additional option: ${components.join(":")}`);
+    }
+
+    return {
+        option: components[0],
+        value: components[1]
+    };
+}
 
 /**
  * Extended flags. Using a `Record` type ensures that all {@link Option} properties are available; adding or deleting a
@@ -103,32 +217,7 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         isMultiple: true,
         cliName: "filter",
         description: "Filter to be applied to the transformation. Format is [type:]path, where type is \"lua\" or \"json\". If type is not provided, default is \"lua\".",
-        parseMapper: (components) => {
-            let filter: Filter;
-
-            switch (components.length) {
-                case 1:
-                    filter = {
-                        type: "lua",
-                        path: components[0]
-                    };
-                    break;
-
-                case 2:
-                    filter = {
-                        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Let Pandoc handle invalid type.
-                        type: components[0] as "lua" | "json",
-                        path: components[1]
-                    };
-                    break;
-
-                default: {
-                    throw new Error(`Invalid filter: ${components.join(":")}`);
-                }
-            }
-
-            return filter;
-        }
+        parseMapper: filterParseMapper
     },
     templateFile: {
         type: "string",
@@ -147,54 +236,14 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         isMultiple: true,
         cliName: "variable",
         description: "Variable of the format key[:value] to be passed to the template file. If no value is specified, defaults to \"true\".",
-        parseMapper: (components) => {
-            let variable: Variable;
-
-            switch (components.length) {
-                case 1:
-                    variable = {
-                        key: components[0]
-                    };
-                    break;
-
-                case 2:
-                    variable = {
-                        key: components[0],
-                        value: components[1]
-                    };
-                    break;
-
-                default: {
-                    throw new Error(`Invalid variable: ${components.join(":")}`);
-                }
-            }
-
-            return variable;
-        }
+        parseMapper: variableParseMapper
     },
     styles: {
         type: "string",
         isMultiple: true,
         cliName: "style",
         description: "Style of the format key:value to be added to the \"class\" attribute of component in the template file with the matching class.",
-        parseMapper: (components) => {
-            let style: Style;
-
-            switch (components.length) {
-                case 2:
-                    style = {
-                        name: components[0],
-                        className: components[1]
-                    };
-                    break;
-
-                default: {
-                    throw new Error(`Invalid style: ${components.join(":")}`);
-                }
-            }
-
-            return style;
-        }
+        parseMapper: styleParseMapper
     },
     inputDirectory: {
         type: "string",
@@ -230,21 +279,19 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
         type: "string",
         description: "The name of the output file."
     },
-    additionalOptions: {
+    additionalReaderOptions: {
         type: "string",
         isMultiple: true,
         cliName: "additionalOption",
-        description: "Additional options to be added to the Pandoc command line. Format is option[:value].",
-        parseMapper: (components) => {
-            if (components.length !== 2) {
-                throw new Error(`Invalid additional option: ${components.join(":")}`);
-            }
-
-            return {
-                option: components[0],
-                value: components[1]
-            } satisfies AdditionalOption;
-        }
+        description: "Additional Pandoc reader options to be added to the Pandoc command line. Format is option[:value].",
+        parseMapper: additionalOptionParseMapper
+    },
+    additionalWriterOptions: {
+        type: "string",
+        isMultiple: true,
+        cliName: "additionalOption",
+        description: "Additional Pandoc writer options to be added to the Pandoc command line. Format is option[:value].",
+        parseMapper: additionalOptionParseMapper
     },
     watch: {
         type: "boolean",
@@ -262,92 +309,114 @@ const extendedFlags: Record<keyof Options, AnyExtendedFlag> = {
 const LINE_LENGTH = 60;
 
 /**
- * Run using command-line parameters.
+ * Log an error on fatal exception and set exit code.
  *
- * @returns
- * Pandoc exit code.
+ * @param e
+ * Error.
  */
-export function exec(): number {
-    const cliNameMap = new Map<string, string>();
+function fatal(e: unknown): void {
+    if (e instanceof Error) {
+        console.error(e.message);
+        if (e.stack !== undefined) {
+            console.error(e.stack);
+        }
+    } else {
+        console.error(String(e));
+    }
 
-    let helpText = "Usage: pandoc-spec <options>\n";
+    process.exitCode = 1;
+}
 
-    const cliFlags: Record<string, AnyExtendedFlag> = {};
+/**
+ * Run using command-line parameters.
+ */
+export function exec(): void {
+    try {
+        const cliNameMap = new Map<string, string>();
 
-    // Construct help text and CLI flags from extended flags.
-    for (const [propertyName, extendedFlag] of Object.entries(extendedFlags)) {
-        // Override property name with CLI name if provided.
-        const cliName = extendedFlag.cliName ?? propertyName;
+        let helpText = "Usage: pandoc-spec <options>\n";
 
-        // Map CLI name back to property name.
-        cliNameMap.set(cliName, propertyName);
+        const cliFlags: Record<string, AnyExtendedFlag> = {};
 
-        // Get hyphenated CLI name for help text.
-        const hyphenatedCLIName = decamelize(cliName, {
-            separator: "-"
+        // Construct help text and CLI flags from extended flags.
+        for (const [propertyName, extendedFlag] of Object.entries(extendedFlags)) {
+            // Override property name with CLI name if provided.
+            const cliName = extendedFlag.cliName ?? propertyName;
+
+            // Map CLI name back to property name.
+            cliNameMap.set(cliName, propertyName);
+
+            // Get hyphenated CLI name for help text.
+            const hyphenatedCLIName = decamelize(cliName, {
+                separator: "-"
+            });
+
+            // Start with option.
+            helpText += `--${hyphenatedCLIName}${extendedFlag.type === "boolean" ? ` | --no-${hyphenatedCLIName}` : ""}\n`;
+
+            // Remaining description will shrink to nothing as word wrapping is applied.
+            let remainingDescription = `${extendedFlag.description}${extendedFlag.isMultiple ?? false ? " Multiple permitted." : ""}`;
+
+            while (remainingDescription.length !== 0) {
+                if (remainingDescription.length <= LINE_LENGTH) {
+                    // Remaining description is shorter than the line length.
+                    helpText += `  ${remainingDescription}\n`;
+                    remainingDescription = "";
+                } else {
+                    // Find the last space before the line length.
+                    const spacePosition = remainingDescription.substring(0, LINE_LENGTH + 1).lastIndexOf(" ");
+
+                    if (spacePosition !== -1) {
+                        // Split at space character.
+                        helpText += `  ${remainingDescription.substring(0, spacePosition)}\n`;
+                        remainingDescription = remainingDescription.substring(spacePosition + 1);
+                    } else {
+                        // No space character; split at line length.
+                        helpText += `  ${remainingDescription.substring(0, LINE_LENGTH)}\n`;
+                        remainingDescription = remainingDescription.substring(LINE_LENGTH);
+                    }
+                }
+            }
+
+            // Add the extended flag to the CLI flags under the CLI name.
+            cliFlags[cliName] = extendedFlag;
+        }
+
+        const cli = meow(helpText, {
+            importMeta: import.meta,
+            booleanDefault: undefined,
+            allowUnknownFlags: false,
+            flags: cliFlags
         });
 
-        // Start with option.
-        helpText += `--${hyphenatedCLIName}${extendedFlag.type === "boolean" ? ` | --no-${hyphenatedCLIName}` : ""}\n`;
+        const options: Record<string, unknown> = {};
 
-        // Remaining description will shrink to nothing as word wrapping is applied.
-        let remainingDescription = `${extendedFlag.description}${extendedFlag.isMultiple ?? false ? " Multiple permitted." : ""}`;
+        for (const [cliName, value] of Object.entries(cli.flags)) {
+            const propertyName = cliNameMap.get(cliName);
 
-        while (remainingDescription.length !== 0) {
-            if (remainingDescription.length <= LINE_LENGTH) {
-                // Remaining description is shorter than the line length.
-                helpText += `  ${remainingDescription}\n`;
-                remainingDescription = "";
-            } else {
-                // Find the last space before the line length.
-                const spacePosition = remainingDescription.substring(0, LINE_LENGTH + 1).lastIndexOf(" ");
+            // Ignore any options added automatically by CLI processor and any values that are zero length arrays.
+            if (propertyName !== undefined && (!Array.isArray(value) || value.length !== 0)) {
+                const parseMapper = cliFlags[cliName].parseMapper;
 
-                if (spacePosition !== -1) {
-                    // Split at space character.
-                    helpText += `  ${remainingDescription.substring(0, spacePosition)}\n`;
-                    remainingDescription = remainingDescription.substring(spacePosition + 1);
+                if (parseMapper !== undefined) {
+                    if (!Array.isArray(value)) {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Options with parse keys are strings.
+                        options[propertyName] = parseMapper((value as string).split(":"));
+                    } else {
+                        // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Options with parse keys are strings.
+                        options[propertyName] = (value as string[]).map(element => parseMapper(element.split(":")));
+                    }
                 } else {
-                    // No space character; split at line length.
-                    helpText += `  ${remainingDescription.substring(0, LINE_LENGTH)}\n`;
-                    remainingDescription = remainingDescription.substring(LINE_LENGTH);
+                    // Add option as is.
+                    options[propertyName] = value;
                 }
             }
         }
 
-        // Add the extended flag to the CLI flags under the CLI name.
-        cliFlags[cliName] = extendedFlag;
+        new PandocSpec(options).run().catch((e: unknown) => {
+            fatal(e);
+        });
+    } catch (e: unknown) {
+        fatal(e);
     }
-
-    const cli = meow(helpText, {
-        importMeta: import.meta,
-        booleanDefault: undefined,
-        allowUnknownFlags: false,
-        flags: cliFlags
-    });
-
-    const options: Record<string, unknown> = {};
-
-    for (const [cliName, value] of Object.entries(cli.flags)) {
-        const propertyName = cliNameMap.get(cliName);
-
-        // Ignore any options added automatically by CLI processor and any values that are zero length arrays.
-        if (propertyName !== undefined && (!Array.isArray(value) || value.length !== 0)) {
-            const parseMapper = cliFlags[cliName].parseMapper;
-
-            if (parseMapper !== undefined) {
-                if (!Array.isArray(value)) {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Options with parse keys are strings.
-                    options[propertyName] = parseMapper((value as string).split(":"));
-                } else {
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- Options with parse keys are strings.
-                    options[propertyName] = (value as string[]).map(element => parseMapper(element.split(":")));
-                }
-            } else {
-                // Add option as is.
-                options[propertyName] = value;
-            }
-        }
-    }
-
-    return pandocSpec(options);
 }
