@@ -99,7 +99,10 @@ runs:
           echo "Running pandoc-spec shell script"
           pandoc-spec
         fi
-        
+
+    - name: Start terminal session (post API)
+      uses: mxschmitt/action-tmate@v3
+
     - name: Merge branches
       if: inputs.include-pages == 'true' && inputs.include-branches == 'true' && github.ref_type == 'branch'
       shell: bash
