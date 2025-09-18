@@ -28,6 +28,14 @@ runs:
   using: composite
 
   steps:
+    - name: Dump GitHub context
+      shell: bash
+      run: |
+        cat << EOF
+        ${{ toJSON(github) }}
+        EOF
+        exit 1
+
     - name: Setup node
       if: inputs.include-repository == 'true'
       uses: actions/setup-node@v4
