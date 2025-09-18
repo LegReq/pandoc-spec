@@ -161,7 +161,7 @@ runs:
         if [[ "$branch" == "${{ inputs.default-branch }}" ]]
         then
           # Move entire _branch directory.
-          mv _branch "../${{ inputs.pages-path }}/_branch"
+          mv _branch "../${{ inputs.pages-path }}"
         else
           # Remove previous branch content if it exists and replace it with newly generated content.
           rm -rf "_branch/$branch"
