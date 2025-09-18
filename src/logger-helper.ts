@@ -7,17 +7,7 @@ import { type Category, CategoryProvider, type CategoryRuntimeSettings } from "t
 export type Logger = Category;
 
 const provider = CategoryProvider.createProvider("pandoc-spec", {
-    level: LogLevel.Trace,
-    channel: {
-        type: "LogChannel",
-        write: (msg) => {
-            process.stderr.write(`${msg.message}\n`);
-
-            if (msg.error !== undefined) {
-                process.stderr.write(`${msg.error}\n`);
-            }
-        }
-    }
+    level: LogLevel.Trace
 });
 
 /**
@@ -30,7 +20,7 @@ const provider = CategoryProvider.createProvider("pandoc-spec", {
  * Logger.
  */
 export function getLogger(name: string): Logger {
-    // TODO Support file for trace.
+    // TODO Support configuration.
     return provider.getCategory(name);
 }
 
