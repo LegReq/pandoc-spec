@@ -23,6 +23,10 @@ inputs:
     description: Default branch for include-branches to filter; ignored if include-branches is false. Default is "main".
     required: false
     default: "main"
+  pages-archive:
+    description: Pages archive name; ignored if include-branches is false. Default is "_pages". Temporary directory with this name will be created during build and ZIP file with this name will be published to the root.
+    required: false
+    default: "_pages"
 
 runs:
   using: composite
@@ -114,18 +118,20 @@ runs:
           pages_url="https://$host_name/$repository_name"
         fi
         
+        pages_archive=${{ inputs.pages-archive }}
+        
         # Get and unzip GitHub Pages archive.
-        curl -s $pages_url/_pages.zip -o _pages.zip
+        curl -s $pages_url/"$pages_archive".zip -o "$pages_archive".zip
         if [[ $? -eq 0 ]]
         then
-          unzip -qq _pages.zip -d _pages
-          rm _pages.zip
+          unzip -qq "$pages_archive".zip -d "$pages_archive"
+          rm "$pages_archive".zip
         else
           # First time including branches. Treat current content as default branch; will be fixed on next push to default branch. 
-          cp -r "${{ inputs.pages-path }}" _pages/
+          cp -r "${{ inputs.pages-path }}" "$pages_archive"/
         fi
 
-        cd _pages
+        cd "$pages_archive"
         
         if [[ -d _branch ]]
         then
@@ -168,8 +174,8 @@ runs:
       
         cd "../${{ inputs.pages-path }}"
       
-        zip -q -r ../_pages .
-        mv ../_pages.zip .
+        zip -q -r ../"$pages_archive" .
+        mv ../"$pages_archive".zip .
       
         cd ..
 
