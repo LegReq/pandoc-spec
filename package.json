@@ -28,7 +28,8 @@
     "sass": "sass --load-path=node_modules --quiet-deps --style=compressed pandoc/pandoc-spec.scss pandoc/pandoc-spec.css",
     "sass-watch": "sass --watch --load-path=node_modules --quiet-deps pandoc/pandoc-spec.scss pandoc/pandoc-spec.css",
     "build-dist": "npm run sass && tsup src/index.ts --format esm --dts --minify",
-    "pandoc-spec-local": "tsx bin/pandoc-spec-local $*"
+    "pandoc-spec-local": "tsx bin/pandoc-spec-local $*",
+    "pandoc-spec-action": "tsx bin/pandoc-spec-local"
   },
   "bin": {
     "pandoc-spec": "bin/pandoc-spec"

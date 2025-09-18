@@ -1,6 +1,6 @@
 /package-lock.json
 /dist/
+/_site/
 /node_modules/
 /pandoc/pandoc-spec.css
 /pandoc/pandoc-spec.css.map
-/test/_site/
