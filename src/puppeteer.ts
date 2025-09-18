@@ -102,7 +102,14 @@ export class PuppeteerConfigurator {
 
         // Skip if configuration file in input directory exists and already has the --no-sandbox argument.
         if (this._state !== State.FromInputComplete) {
-            fs.writeFileSync(this._inputConfigurationFile, `${JSON.stringify(configuration, null, 2)}\n`);
+            const newConfigurationFileContent = `${JSON.stringify(configuration, null, 2)}\n`;
+
+            if (newConfigurationFileContent !== this._configurationFileContent) {
+                fs.writeFileSync(this._inputConfigurationFile, newConfigurationFileContent);
+            } else {
+                // Configuration file is left over from prior run; delete.
+                this._state = State.NotFound;
+            }
         }
     }
 
