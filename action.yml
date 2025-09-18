@@ -174,15 +174,16 @@ runs:
           # Move entire _branch directory.
           mv _branch "../${{ inputs.pages-path }}/_branch"
         else
-          # Remove previous branch content and replace with newly generated content.
+          # Remove previous branch content if it exists and replace it with newly generated content.
           rm -rf "_branch/$branch"
-          mv "../${{ inputs.pages-path }}"/* "_branch/$branch/"
+          mkdir "_branch/$branch"
+          mv "../${{ inputs.pages-path }}"/* "_branch/$branch"
       
           # Move consolidated directory into place.
-          mv * "../${{ inputs.pages-path }}/"
+          mv * "../${{ inputs.pages-path }}"
         fi
       
-        cd "../${{ inputs.pages-path }}/"
+        cd "../${{ inputs.pages-path }}"
       
         zip -q -r ../_pages .
         mv ../_pages.zip .
