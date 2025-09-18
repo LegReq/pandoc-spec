@@ -28,14 +28,6 @@ runs:
   using: composite
 
   steps:
-    - name: Dump GitHub context
-      shell: bash
-      run: |
-        cat << EOF
-        ${{ toJSON(github) }}
-        EOF
-        exit 1
-
     - name: Setup node
       if: inputs.include-repository == 'true'
       uses: actions/setup-node@v4
@@ -106,72 +98,96 @@ runs:
           pandoc-spec
         fi
         
-        if [[ "${{ inputs.include-branches }}" == "true" ]]
+    - name: Merge branches
+      if: inputs.include-pages == 'true' && inputs.include-branches == 'true' && github.ref_type == 'branch'
+      shell: bash
+      run: |
+        # Exit codes are handled by script.
+        set +e
+        
+        host_name=$(echo "${{ github.event.repository.owner.name }}.github.io" | tr "[:upper:]" "[:lower:]")
+        repository_name="${{ github.event.repository.name }}"
+        lower_repository_name=$(echo "$repository_name" | tr "[:upper:]" "[:lower:]")
+        
+        if [[ "$lower_repository_name" == "host_name" ]]
         then
-          pages_url=$(gh api "repos/$GITHUB_REPOSITORY/pages" --jq '.html_url')
-          
-          echo "Pages URL: $pages_url"
-          
-          # Get and unzip GitHub Pages archive.
-          curl -s $pages_url/_pages.zip -o _pages.zip
-          if [[ $? -eq 0 ]]
-          then
-            unzip -qq _pages.zip -d _pages
-            rm _pages.zip
-          else
-            # First time including branches. Treat current content as default branch; will be fixed on next push to default branch. 
-            cp -r "${{ inputs.pages-path }}" _pages/
-          fi
-
-          cd _pages
-        
-          if [[ -d _branch ]]
-          then
-            cd _branch
-        
-            BRANCHES=$(git branch --remotes --format=%\(refname:lstrip=-1\))
-        
-            ls | while read -r branch
-            do
-              # Check than branch still exists.
-              echo "BRANCHES" | grep -q "^$branch$"
-        
-              if [[ $? -ne 0 ]]
-              then
-                # Branch no longer exists; delete from GitHub Pages.
-                rm -rf "$branch"
-              fi
-            done
-        
-            cd ..
-          else
-            mkdir _branch
-          fi
-        
-          branch=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
-        
-          echo "Branch: $branch"
-        
-          if [[ "$branch" == "${{ inputs.default-branch }}" ]]
-          then
-            # Move entire _branch directory.
-            mv _branch "../${{ inputs.pages-path }}/_branch"
-          else
-            # Remove previous branch content and replace with newly generated content.
-            rm -rf "_branch/$branch"
-            mv "../${{ inputs.pages-path }}/*" "_branch/$branch/"
-        
-            # Move consolidated directory into place.
-            mv * "../${{ inputs.pages-path }}/"
-          fi
-        
-          cd "../${{ inputs.pages-path }}/"
-        
-          zip -q -r ../_pages .
-          mv ../_pages.zip .
-        
-          cd ..
+          pages_url="https://$host_name"
+        else
+          pages_url="https://$host_name/$repository_name"
         fi
+        
+        echo "Pages URL: $pages_url"
+        
+        ls -l
+        
+        # Get and unzip GitHub Pages archive.
+        curl -s $pages_url/_pages.zip -o _pages.zip
+        if [[ $? -eq 0 ]]
+        then
+          unzip -qq _pages.zip -d _pages
+          rm _pages.zip
+        else
+          # First time including branches. Treat current content as default branch; will be fixed on next push to default branch. 
+          cp -r "${{ inputs.pages-path }}" _pages/
+        fi
+
+        ls -l
+        
+        cd _pages
+        
+        ls -l
+        
+        if [[ -d _branch ]]
+        then
+          cd _branch
+      
+          BRANCHES=$(git branch --remotes --format=%\(refname:lstrip=-1\))
+        
+          echo $BRANCHES
+      
+          ls | while read -r branch
+          do
+            # Check than branch still exists.
+            echo "BRANCHES" | grep -q "^$branch$"
+      
+            if [[ $? -ne 0 ]]
+            then
+              # Branch no longer exists; delete from GitHub Pages.
+              rm -rf "$branch"
+            fi
+          done
+      
+          cd ..
+        else
+          mkdir _branch
+        fi
+        
+        ls -l
+      
+        branch=${{ github.ref_name }}
+        
+        echo "Branch: $branch"
+        echo "Default: ${{ inputs.default-branch }}"
+      
+        if [[ "$branch" == "${{ inputs.default-branch }}" ]]
+        then
+          # Move entire _branch directory.
+          mv _branch "../${{ inputs.pages-path }}/_branch"
+        else
+          # Remove previous branch content and replace with newly generated content.
+          rm -rf "_branch/$branch"
+          mv "../${{ inputs.pages-path }}"/* "_branch/$branch/"
+      
+          # Move consolidated directory into place.
+          mv * "../${{ inputs.pages-path }}/"
+        fi
+      
+        cd "../${{ inputs.pages-path }}/"
+      
+        zip -q -r ../_pages .
+        mv ../_pages.zip .
+      
+        cd ..
 
     - name: Configure GitHub Pages
       if: inputs.include-pages == 'true'
