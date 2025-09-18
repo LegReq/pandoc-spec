@@ -60,18 +60,18 @@ runs:
         
         if [[ -f package.json ]]
         then
-          NPM_SCRIPTS=$(npm run)
+          npm_scripts=$(npm run)
           
           if [[ $? -eq 0 ]]
           then
-            if [[ "$NPM_SCRIPTS" == "" ]]
+            if [[ "$npm_scripts" == "" ]]
             then
               echo "No scripts found."
-              GREP_RESULT=1
+              grep_result=1
             else
               # Check for package-defined build.
-              echo "$NPM_SCRIPTS" | grep -q "^  pandoc-spec-action$"
-              GREP_RESULT=$?
+              echo "$npm_scripts" | grep -q "^  pandoc-spec-action$"
+              grep_result=$?
             fi
           else
             # npm command failed.
@@ -79,7 +79,7 @@ runs:
           fi
         else
           # No package.json.
-          GREP_RESULT=1
+          grep_result=1
         fi
         
         if [[ -f $PWD/node_modules/.bin/pandoc-spec ]]
@@ -91,7 +91,7 @@ runs:
           npm install @legreq/pandoc-spec --global
         fi
       
-        if [[ $GREP_RESULT -eq 0 ]]
+        if [[ $grep_result -eq 0 ]]
         then
           echo "Running pandoc-spec-action npm script"
           npm run pandoc-spec-action
@@ -99,9 +99,6 @@ runs:
           echo "Running pandoc-spec shell script"
           pandoc-spec
         fi
-
-    - name: Start terminal session (post API)
-      uses: mxschmitt/action-tmate@v3
 
     - name: Merge branches
       if: inputs.include-pages == 'true' && inputs.include-branches == 'true' && github.ref_type == 'branch'
@@ -140,15 +137,17 @@ runs:
         then
           cd _branch
       
-          BRANCHES=$(git ls-remote --branches | grep -oE "[^/]+$")
+          branches=$(git ls-remote --branches | grep -oE "[^/]+$")
         
           ls | while read -r branch
           do
-            # Check than branch still exists.
-            echo "BRANCHES" | grep -q "^$branch$"
+            # Check that branch still exists.
+            echo "$branches" | grep -q "^$branch$"
       
             if [[ $? -ne 0 ]]
             then
+              echo "Deleting stale branch $branch"
+        
               # Branch no longer exists; delete from GitHub Pages.
               rm -rf "$branch"
             fi
