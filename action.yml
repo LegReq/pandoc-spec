@@ -106,79 +106,105 @@ runs:
       run: |
         # Exit codes are handled by script.
         set +e
-        
-        host_name=$(echo "${{ github.event.repository.owner.name }}.github.io" | tr "[:upper:]" "[:lower:]")
+                
+        pages_path="${{ inputs.pages-path }}"
+        owner_name="${{ github.event.repository.owner.name }}"
         repository_name="${{ github.event.repository.name }}"
+        default_branch="${{ inputs.default-branch }}"
+        pages_archive="${{ inputs.pages-archive }}"
+        branch="${{ github.ref_name }}"
+        
+        host_name=$(echo "$owner_name.github.io" | tr "[:upper:]" "[:lower:]")
         lower_repository_name=$(echo "$repository_name" | tr "[:upper:]" "[:lower:]")
         
         if [[ "$lower_repository_name" == "$host_name" ]]
         then
+          echo "Repository is GitHub Pages default"
           pages_url="https://$host_name"
         else
+          echo "Repository is not GitHub Pages default"
           pages_url="https://$host_name/$repository_name"
         fi
         
-        pages_archive=${{ inputs.pages-archive }}
+        # Get GitHub Pages archive.
+        curl -fsSL "$pages_url/$pages_archive.zip" -o "$pages_archive.zip"
         
-        # Get and unzip GitHub Pages archive.
-        # Fail on 404 and similar so we fall back properly
-        curl -fSL "$pages_url/${{ inputs.pages-archive }}.zip" -o "${{ inputs.pages-archive }}.zip"
-        if unzip -qq "${{ inputs.pages-archive }}.zip" -d "${{ inputs.pages-archive }}"; then
-          rm "${{ inputs.pages-archive }}.zip"
+        if [[ $? -eq 0 ]]
+        then
+          echo "GitHub Pages archive downloaded"
+          
+          # Unzip will create the directory.
+          unzip -qq "$pages_archive".zip -d "$pages_archive"
+          rm "$pages_archive".zip
         else
-          echo "No existing pages archive; seeding new one"
-          mkdir -p "${{ inputs.pages-archive }}"
-          cp -r "${{ inputs.pages-path }}" "${{ inputs.pages-archive }}/"
+          echo "No GitHub Pages archive downloaded"
+        
+          # Copy existing output as the root, creating directory if necessary.
+          # If not the default branch, this will overwrite the root, but it's a one-time cost.  
+          cp -r "$pages_path" "$pages_archive/"
         fi
-
+        
         cd "$pages_archive"
         
         if [[ -d _branch ]]
         then
+          echo "Directory _branch exists"
+          
           cd _branch
-      
-          branches=$(git ls-remote --branches | grep -oE "[^/]+$")
+          
+          # Pipes spawn extra shells that don't share variables so write to file and then read from it.  
+          git ls-remote --branches | grep -oE "[^/]+$" > remote_branches 2>/dev/null
+          readarray -t remote_branches < remote_branches
+          rm remote_branches
         
-          ls | while read -r branch
+          find . -type d -print | grep -oE "[^./].*" | while read -r archive_branch
           do
-            # Check that branch still exists.
-            echo "$branches" | grep -q "^$branch$"
-      
-            if [[ $? -ne 0 ]]
+            branch_matched=0
+            
+            for remote_branch in "${remote_branches[@]}"
+            do
+              if [[ "$remote_branch" == "$archive_branch" || "$remote_branch" == "$archive_branch/"* ]]
+              then
+                branch_matched=1
+              fi
+            done
+            
+            if [[ $branch_matched -eq 0 ]]
             then
-              echo "Deleting stale branch $branch"
+              echo "Deleting stale branch $archive_branch"
         
               # Branch no longer exists; delete from GitHub Pages.
-              rm -rf "$branch"
+              rm -rf "$archive_branch"
             fi
           done
-      
+        
           cd ..
         else
           mkdir _branch
         fi
         
-        branch=${{ github.ref_name }}
-        
-        if [[ "$branch" == "${{ inputs.default-branch }}" ]]
+        if [[ "$branch" == "$default_branch" ]]
         then
           # Move entire _branch directory.
-          mv _branch "../${{ inputs.pages-path }}"
+          mv _branch "../$pages_path"
         else
           # Remove previous branch content if it exists and replace it with newly generated content.
           rm -rf "_branch/$branch"
-          mkdir "_branch/$branch"
-          mv "../${{ inputs.pages-path }}"/* "_branch/$branch"
-      
+          mkdir -p "_branch/$branch"
+          mv "../$pages_path"/* "_branch/$branch"
+        
           # Move consolidated directory into place.
-          mv * "../${{ inputs.pages-path }}"
+          mv * "../$pages_path"
         fi
-      
-        cd "../${{ inputs.pages-path }}"
-      
+        
+        cd "../$pages_path"
+        
+        # Create archive and move into place for publication.
         zip -q -r ../"$pages_archive" .
         mv ../"$pages_archive".zip .
-      
+        
+        echo "Pages archive created"
+        
         cd ..
 
     - name: Configure GitHub Pages
