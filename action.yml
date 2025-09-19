@@ -111,7 +111,7 @@ runs:
         repository_name="${{ github.event.repository.name }}"
         lower_repository_name=$(echo "$repository_name" | tr "[:upper:]" "[:lower:]")
         
-        if [[ "$lower_repository_name" == "host_name" ]]
+        if [[ "$lower_repository_name" == "$host_name" ]]
         then
           pages_url="https://$host_name"
         else
@@ -121,14 +121,14 @@ runs:
         pages_archive=${{ inputs.pages-archive }}
         
         # Get and unzip GitHub Pages archive.
-        curl -s $pages_url/"$pages_archive".zip -o "$pages_archive".zip
-        if [[ $? -eq 0 ]]
-        then
-          unzip -qq "$pages_archive".zip -d "$pages_archive"
-          rm "$pages_archive".zip
+        # Fail on 404 and similar so we fall back properly
+        curl -fSL "$pages_url/${{ inputs.pages-archive }}.zip" -o "${{ inputs.pages-archive }}.zip"
+        if unzip -qq "${{ inputs.pages-archive }}.zip" -d "${{ inputs.pages-archive }}"; then
+          rm "${{ inputs.pages-archive }}.zip"
         else
-          # First time including branches. Treat current content as default branch; will be fixed on next push to default branch. 
-          cp -r "${{ inputs.pages-path }}" "$pages_archive"/
+          echo "No existing pages archive; seeding new one"
+          mkdir -p "${{ inputs.pages-archive }}"
+          cp -r "${{ inputs.pages-path }}" "${{ inputs.pages-archive }}/"
         fi
 
         cd "$pages_archive"
