@@ -100,6 +100,9 @@ runs:
           pandoc-spec
         fi
 
+    - name: Start terminal session
+      uses: mxschmitt/action-tmate@v3
+
     - name: Merge branches
       if: inputs.include-pages == 'true' && inputs.include-branches == 'true' && github.ref_type == 'branch'
       shell: bash
